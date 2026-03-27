@@ -1,0 +1,20 @@
+{
+  "forecaster": {
+    "mae": 389.19,
+    "rmse": 1781.47,
+    "r2": 0.8751,
+    "n_train": 219291,
+    "n_test": 9045
+  },
+  "classifier": {
+    "accuracy": 0.9713,
+    "macro_f1": 0.9701,
+    "classes": [
+      "High",
+      "Low",
+      "Medium"
+    ],
+    "n_train": 219291,
+    "n_test": 9045
+  }
+}
