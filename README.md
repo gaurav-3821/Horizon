@@ -1,109 +1,34 @@
-# Flux
+# Horizon
 
-## Multimodal Health Intelligence Platform
+Horizon is a Streamlit Cloud-ready health intelligence dashboard that bundles three independent machine learning tracks into one deployable repository. The repo is organized by track so each model, dataset, artifact, and app can be updated manually without digging through mixed notebooks or duplicate entrypoints.
 
-**Flux** is a multi-modal, cloud-deployed health intelligence platform built for hackathon-scale decision support across molecular safety, antimicrobial resistance, and epidemic forecasting. It unifies three independent machine learning systems into a single Streamlit dashboard so judges, clinicians, and reviewers can evaluate model behavior, inference speed, and deployment readiness from one interface.
+## Overview
 
----
+The repository is split into three self-contained application areas:
 
-## Technical Overview
+- `track_a/`: toxicity prediction
+- `track_b/`: antibiotic resistance prediction
+- `track_c/`: epidemic spread forecasting
 
-Flux combines three specialized tracks:
+The single supported top-level app entrypoint is `flux.py`. That file routes into each track-specific Streamlit app through native `st.Page()` and `st.navigation()`.
 
-- **Track A:** Molecular toxicity prediction from chemical structure
-- **Track B:** Antibiotic resistance classification from small clinical data
-- **Track C:** Epidemic spread forecasting from temporal and public-health signals
+## Streamlit Cloud Deployment
 
-Each track was designed with a different modeling paradigm, but the overall system shares the same engineering priorities:
+Use these settings when deploying on Streamlit Cloud:
 
-- **Mathematically honest validation**
-- **Deployment-aware architecture**
-- **Clear separation of training, inference, and dashboard layers**
+- Repository: `gaurav-3821/Horizon`
+- Branch: `main`
+- Main file path: `flux.py`
+- Python runtime: `python-3.12` from `runtime.txt`
 
----
+The deployment is designed around:
 
-## Track A: Toxicity Prediction
+- one root `requirements.txt`
+- one root app entrypoint
+- track-local `data/` and `artifacts/` directories
+- `pathlib`-based path resolution from each app's own directory
 
-### GNN + Tabular Hybrid
-
-Track A models molecular toxicity using a **hybrid architecture that combines Graph Neural Networks with tabular molecular descriptors**. The graph branch captures structural relationships directly from SMILES-derived molecular graphs, while the tabular branch encodes physicochemical descriptors and fingerprint-based structural summaries for late fusion classification across 12 Tox21 endpoints.
-
-### V2 Upgrades
-
-- **MACCS Keys Swap:** We upgraded the structural fingerprint pipeline to **MACCS Keys**, giving the model a more stable and deployment-friendly structural representation.
-- **Knowledge Distillation:** We introduced **Teacher-Student distillation**, where the heavier hybrid model teaches a lightweight student model for **high-speed inference** in deployment scenarios.
-- **Focal Loss with Masked Labels:** Because Tox21 contains extreme imbalance and many missing labels, loss is computed only where labels exist, preventing the model from learning false negatives from NaN targets.
-
-### Key Results
-
-- **Overall Validation AUC:** **0.8416**
-- **NR-AR AUC:** **0.8357**
-- Strong performance was retained even on the **highly imbalanced NR-AR target**, supported by **Focal Loss** and masked supervision.
-
----
-
-## Track B: Antibiotic Resistance
-
-### XGBoost with Leakage-Safe Validation
-
-Track B predicts antibiotic resistance on a **very small clinical dataset (274 rows)**, where standard train/test reporting can easily inflate performance. Instead of chasing vanity metrics, we designed the pipeline around **strict 10-Fold Stratified Cross-Validation**, ensuring every performance estimate is evaluated under realistic sample scarcity.
-
-### Methodological Strength
-
-- **10-Fold Stratified CV:** **Mathematical honesty over vanity metrics**. This was the central design choice for a low-sample clinical dataset.
-- **Per-antibiotic modeling:** Separate XGBoost models were trained for each antibiotic rather than forcing a single monolithic classifier.
-- **Target encoding inside validation workflow:** High-cardinality clinical categories were encoded in a leakage-aware way.
-
-### V2 Upgrade
-
-- **Fold-Isolated SMOTE-NC:** We implemented **SMOTE-NC strictly inside the training fold of each CV split**, never before splitting. This lets us synthetically balance minority classes such as Ciprofloxacin resistance **without contaminating validation folds**.
-
-This makes Track B one of the strongest methodological components of Flux: small-data aware, clinically cautious, and statistically defensible.
-
----
-
-## Track C: Epidemic Forecaster
-
-### Spatiotemporal LightGBM
-
-Track C forecasts epidemic dynamics with a **spatiotemporal LightGBM pipeline** that predicts future case behavior from lagged case signals, rolling windows, spatial proxies, and public-health context features.
-
-### Modeling Strategy
-
-- **Strict Chronological / Temporal Split:** The model predicts the **actual future**, not randomly shuffled holdout rows.
-- **External OWID Integration:** We merged **Our World in Data (OWID)** signals such as vaccination, testing, and stringency-related public-health indicators.
-- **Behavioral + Global Context Features:** The feature set includes temporal lags, rolling means, and global epidemic context to improve forecasting realism.
-
-### Key Results
-
-- **R2 Score:** **0.8751**
-- **MAE:** **389.19**
-
-This track demonstrates a strong forecasting baseline with disciplined temporal evaluation and meaningful external-signal integration.
-
----
-
-## Unified Dashboard
-
-Flux is deployed as a **single master Streamlit application** that routes across all three tracks from one interface. This makes it easy for judges to:
-
-- inspect model loading behavior
-- compare inference workflows across tracks
-- validate cloud deployment readiness
-- evaluate a full-stack ML product rather than isolated notebooks
-
----
-
-## Why Flux Stands Out
-
-- **Multi-modal system design:** chemistry, clinical resistance, and epidemiology in one platform
-- **Architectural depth:** **GNN + tabular fusion**, **Knowledge Distillation**, **XGBoost with fold-safe SMOTE-NC**, and **spatiotemporal LightGBM**
-- **Validation rigor:** **masked focal loss**, **10-Fold CV**, and **strict temporal splits**
-- **Deployment awareness:** unified Streamlit hub, path-safe code organization, and cloud-ready packaging
-
----
-
-## How To Run
+## Local Run
 
 Install dependencies:
 
@@ -111,14 +36,83 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Launch the unified dashboard:
+Run the unified dashboard:
 
 ```bash
 streamlit run flux.py
 ```
 
----
+Run a single track directly when you only need one app:
 
-## Project Identity
+```bash
+streamlit run track_a/app.py
+streamlit run track_b/app.py
+streamlit run track_c/app.py
+```
 
-**Flux** is not a single-model demo. It is a **unified medical and epidemiological AI dashboard** built to show how rigorous modeling, honest validation, and deployment-aware engineering can be combined into one coherent health intelligence platform.
+## Repository Layout
+
+### Root
+
+- `flux.py`: unified Streamlit navigation hub
+- `requirements.txt`: repository-wide Python dependencies
+- `runtime.txt`: Streamlit Cloud runtime pin
+- `Dockerfile`: optional container entrypoint for the same root app
+- `PROJECT_STRUCTURE.md`: quick file map
+- `README.md`: deployment and structure guide
+
+### Track A
+
+Track A contains the molecular toxicity system.
+
+- `track_a/app.py`: Streamlit inference UI
+- `track_a/track_a_pipeline.py`: preprocessing, training, distillation, and evaluation
+- `track_a/data/`: Tox21 and ZINC source data
+- `track_a/artifacts/`: trained models, SHAP outputs, and processed data
+
+### Track B
+
+Track B contains the antibiotic resistance system.
+
+- `track_b/app.py`: Streamlit inference UI
+- `track_b/track_b_model.py`: model training and validation
+- `track_b/track_b_data_loader.py`: dataset cleaning and unification
+- `track_b/data/`: Track B source datasets
+- `track_b/artifacts/`: saved models, encoders, scalers, and CV summaries
+
+### Track C
+
+Track C contains the epidemic forecasting system.
+
+- `track_c/app.py`: Streamlit analytics and prediction UI
+- `track_c/track_c_model.py`: forecasting and classification pipeline
+- `track_c/track_c_data_loader.py`: JHU and OWID merge logic plus feature engineering
+- `track_c/data/`: epidemic time-series files
+- `track_c/artifacts/`: saved forecaster, classifier, and evaluation results
+
+### Docs
+
+- `docs/`: handoff reports and presentation assets
+
+## Design Rules In This Repo
+
+- one authoritative Streamlit app entrypoint: `flux.py`
+- one authoritative dependency file: `requirements.txt`
+- track-local assets stay with their matching app
+- no duplicate master-app files
+- deployment settings should match the root repo layout, not old nested layouts
+
+## Notes For Manual Editing
+
+- If a saved artifact changes shape, update the app in the same track folder.
+- Keep new models, pickles, and plots in that track's `artifacts/` folder.
+- Keep raw or source datasets inside the matching track's `data/` folder.
+- If deployment behavior changes, update `flux.py`, `requirements.txt`, and `runtime.txt` together.
+
+## Current Deployment Target
+
+This repository is prepared primarily for Streamlit Cloud. Docker is still available for local container use, but the intended deployment path is:
+
+```bash
+streamlit run flux.py
+```

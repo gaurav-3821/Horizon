@@ -10,6 +10,6 @@ joblib
 matplotlib
 torch
 torch-geometric
-rdkit-pypi
+rdkit
 shap
 openpyxl

@@ -24,17 +24,19 @@ def build_page(title: str, icon: str | None, *candidates: str):
 
 
 def main():
+    st.set_page_config(page_title="Horizon", layout="wide")
+
     if not hasattr(st, "Page") or not hasattr(st, "navigation"):
         st.error("This Streamlit version does not support st.Page/st.navigation.")
         return
 
-    st.sidebar.title("Flux")
+    st.sidebar.title("Horizon")
     st.sidebar.caption("Unified navigation across all three ML tracks.")
 
     pages = [
-        build_page("Track A: Toxicity", "🧬", "track_a/app.py"),
-        build_page("Track B: Resistance", "🦠", "track_b/app.py"),
-        build_page("Track C: Epidemic", "📈", "track_c/app.py"),
+        build_page("Track A: Toxicity", "\U0001F9EC", "track_a/app.py"),
+        build_page("Track B: Resistance", "\U0001F9A0", "track_b/app.py"),
+        build_page("Track C: Epidemic", "\U0001F4C8", "track_c/app.py"),
     ]
     pages = [page for page in pages if page is not None]
 

@@ -7,6 +7,7 @@ This repository is organized by track so each part of the project is easy to fin
 - `flux.py`: unified Streamlit hub
 - `requirements.txt`: repository-wide Python dependencies
 - `runtime.txt`: Streamlit Cloud Python version
+- `Dockerfile`: optional container entrypoint for `flux.py`
 - `README.md`: project overview
 
 ## Track A
@@ -35,7 +36,3 @@ This repository is organized by track so each part of the project is easy to fin
 ## Docs
 
 - `docs/`: technical report and presentation files
-
-## Hub
-
-- `hub/master_app.py`: alternate master navigation entrypoint
