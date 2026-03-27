@@ -15,12 +15,12 @@ def resolve_script_path(*candidates: str) -> Path | None:
     return None
 
 
-def build_page(title: str, icon: str | None, *candidates: str):
+def build_page(title: str, icon: str | None, url_path: str, *candidates: str):
     script_path = resolve_script_path(*candidates)
     if script_path is None:
         st.sidebar.warning(f"Missing page script for {title}: {', '.join(candidates)}")
         return None
-    return st.Page(str(script_path), title=title, icon=icon)
+    return st.Page(str(script_path), title=title, icon=icon, url_path=url_path)
 
 
 def main():
@@ -34,9 +34,9 @@ def main():
     st.sidebar.caption("Unified navigation across all three ML tracks.")
 
     pages = [
-        build_page("Track A: Toxicity", "\U0001F9EC", "track_a/app.py"),
-        build_page("Track B: Resistance", "\U0001F9A0", "track_b/app.py"),
-        build_page("Track C: Epidemic", "\U0001F4C8", "track_c/app.py"),
+        build_page("Track A: Toxicity", "\U0001F9EC", "track-a", "track_a/app.py"),
+        build_page("Track B: Resistance", "\U0001F9A0", "track-b", "track_b/app.py"),
+        build_page("Track C: Epidemic", "\U0001F4C8", "track-c", "track_c/app.py"),
     ]
     pages = [page for page in pages if page is not None]
 
