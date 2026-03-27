@@ -147,7 +147,7 @@ with tab2:
                 }
             )
         perf_df = pd.DataFrame(rows)
-        st.dataframe(perf_df, use_container_width=True)
+        st.dataframe(perf_df, width="stretch")
 
         fig, ax = plt.subplots(figsize=(8, 4))
         perf_df.set_index("Antibiotic")[["Accuracy", "ROC-AUC"]].plot(kind="bar", ax=ax)

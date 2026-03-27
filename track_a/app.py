@@ -308,7 +308,7 @@ if run_pred:
     colors = [risk_color(float(p)) for p in pred]
     fig = go.Figure(data=[go.Bar(x=TARGET_COLS, y=pred, marker_color=colors)])
     fig.update_layout(yaxis_title="Probability", yaxis_range=[0, 1], xaxis_tickangle=-30)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     risk_levels = [get_risk_level(float(p)) for p in pred]
     high = sum(level == "High" for level in risk_levels)
@@ -328,7 +328,7 @@ if run_pred:
                 "Risk Level": risk_levels,
             }
         )
-        st.dataframe(detail_df, use_container_width=True, hide_index=True)
+        st.dataframe(detail_df, width="stretch", hide_index=True)
 
     st.subheader("SHAP Waterfall (Target: NR-AhR)")
     background = load_background_tabular()
