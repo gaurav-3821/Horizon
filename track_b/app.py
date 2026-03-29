@@ -373,7 +373,7 @@ Keep the output concise, clinician-facing, and structured.
 """.strip()
 
     body = {
-        "model": "mistralai/mistral-7b-instruct:free",
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.2,
     }
