@@ -351,9 +351,9 @@ def build_pca_projection():
 
 
 def call_groq_advisor(payload: dict) -> str:
-    api_key = st.secrets.get("OPENROUTER_API_KEY")
+    api_key = st.secrets.get("GROQ_API_KEY")
     if not api_key:
-        return "Missing `OPENROUTER_API_KEY` in Streamlit secrets. Add the key before using the clinical advisor."
+        return "Missing `GROQ_API_KEY` in Streamlit secrets. Add the key before using the clinical advisor."
 
     prompt = f"""
 You are a clinical antimicrobial stewardship advisor. Interpret this research model output clearly and concisely.
@@ -373,18 +373,16 @@ Keep the output concise, clinician-facing, and structured.
 """.strip()
 
     body = {
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "model": "llama-3.3-70b-versatile",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.2,
     }
     request = urllib.request.Request(
-        "https://openrouter.ai/api/v1/chat/completions",
+        "https://api.groq.com/openai/v1/chat/completions",
         data=json.dumps(body).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": "https://github.com/gaurav-3821/Horizon",
-            "X-Title": "Horizon AI Clinical Advisor",
         },
         method="POST",
     )
@@ -397,9 +395,9 @@ Keep the output concise, clinician-facing, and structured.
             detail = exc.read().decode("utf-8")
         except Exception:
             detail = str(exc)
-        return f"OpenRouter API error: {detail}"
+        return f"Groq API error: {detail}"
     except Exception as exc:
-        return f"OpenRouter API call failed: {exc}"
+        return f"Groq API call failed: {exc}"
 
 
 def make_input_frame(inputs: dict) -> pd.DataFrame:
