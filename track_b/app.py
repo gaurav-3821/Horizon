@@ -539,7 +539,7 @@ def main():
     st.sidebar.caption("Track navigation")
     st.sidebar.radio(
         "Tracks",
-        ["🧬 Track B — Antibiotic Resistance", "🧪 Track A — Drug Toxicity", "🦠 Track C — Epidemic Spread"],
+        ["ðŸ§¬ Track B â€” Antibiotic Resistance", "ðŸ§ª Track A â€” Drug Toxicity", "ðŸ¦  Track C â€” Epidemic Spread"],
         index=0,
         label_visibility="collapsed",
     )
@@ -549,27 +549,27 @@ def main():
     mendeley_df = unified_df[unified_df["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
 
     st.markdown('<div class="hero-title">AI Clinical Advisor</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">Track B — Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">Track B â€” Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="warning-banner">⚠️ Model trained on Mendeley AMR dataset. For research use only.</div>',
+        '<div class="warning-banner">âš ï¸ Model trained on Mendeley AMR dataset. For research use only.</div>',
         unsafe_allow_html=True,
     )
 
     prediction_payload = st.session_state.get("track_b_prediction_payload")
-    latency_display = "—"
+    latency_display = "â€”"
     if prediction_payload:
         latency_display = f"{prediction_payload['latency_ms']:.1f} ms"
 
     m1, m2, m3, m4 = st.columns(4, gap="small")
     with m1:
-        render_metric_card("📈", "Model AUC", "0.8540", "Validated on Mendeley-only stack")
+        render_metric_card("ðŸ“ˆ", "Model AUC", "0.8540", "Validated on Mendeley-only stack")
     with m2:
-        render_metric_card("🧱", "Training Samples", "1,370", "Mendeley subset only")
+        render_metric_card("ðŸ§±", "Training Samples", "1,370", "Mendeley subset only")
     with m3:
-        render_metric_card("🧬", "Model", "Mendeley Tuned Stack", "XGBoost + LightGBM + CatBoost")
+        render_metric_card("ðŸ§¬", "Model", "Mendeley Tuned Stack", "XGBoost + LightGBM + CatBoost")
     with m4:
-        render_metric_card("⏱️", "Latency", latency_display, "Prediction path only")
+        render_metric_card("â±ï¸", "Latency", latency_display, "Prediction path only")
 
     left_col, center_col, right_col = st.columns([1.1, 2.0, 1.35], gap="large")
 
@@ -734,20 +734,45 @@ def main():
                     st.session_state["track_b_advisor_text"] = advisor_text
             advisor_text = st.session_state.get("track_b_advisor_text")
             if advisor_text:
-                st.markdown(
-                    f'<div class="advisor-response-box"><div class="advisor-response-text">{html.escape(advisor_text)}</div></div>',
-                    unsafe_allow_html=True,
-                )
+                advisor_html = f"""
+<div style="background: linear-gradient(135deg, #1a1a2e, #16213e);
+             border: 1px solid #00d4ff;
+             border-left: 4px solid #00d4ff;
+             border-radius: 12px;
+             padding: 24px;
+             margin-top: 16px;">
+    <div style="color: #f5f7fb; line-height: 1.7; white-space: pre-wrap;">{html.escape(advisor_text)}</div>
+</div>
+"""
+                st.markdown(advisor_html, unsafe_allow_html=True)
             else:
-                st.markdown(
-                    '<div class="advisor-response-box"><div class="advisor-placeholder">🔬 Click \'Generate Clinical Interpretation\' to get AI-powered antibiotic stewardship recommendations.</div></div>',
-                    unsafe_allow_html=True,
-                )
+                advisor_html = f"""
+<div style="background: linear-gradient(135deg, #1a1a2e, #16213e);
+             border: 1px solid #00d4ff;
+             border-left: 4px solid #00d4ff;
+             border-radius: 12px;
+             padding: 24px;
+             margin-top: 16px;">
+    <p style="color: #a0a0b0; font-style: italic;">
+        🔬 Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
+    </p>
+</div>
+"""
+                st.markdown(advisor_html, unsafe_allow_html=True)
         else:
-            st.markdown(
-                '<div class="advisor-response-box"><div class="advisor-placeholder">🔬 Click \'Generate Clinical Interpretation\' to get AI-powered antibiotic stewardship recommendations.</div></div>',
-                unsafe_allow_html=True,
-            )
+            advisor_html = f"""
+<div style="background: linear-gradient(135deg, #1a1a2e, #16213e);
+             border: 1px solid #00d4ff;
+             border-left: 4px solid #00d4ff;
+             border-radius: 12px;
+             padding: 24px;
+             margin-top: 16px;">
+    <p style="color: #a0a0b0; font-style: italic;">
+        🔬 Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
+    </p>
+</div>
+"""
+            st.markdown(advisor_html, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with advisor_right:
