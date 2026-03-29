@@ -1,0 +1,126 @@
+{
+  "mendeley_only": {
+    "feature_count": 277,
+    "auc_per_fold": [
+      0.854987227469851,
+      0.8233826412404206,
+      0.8304078014184397,
+      0.8685874704491726,
+      0.8719858156028369
+    ],
+    "auc_mean": 0.8498701912361442,
+    "auc_std": 0.01972813404393042,
+    "n_splits": 5,
+    "n_rows": 1370
+  },
+  "kaggle_only": {
+    "feature_count": 277,
+    "auc_per_fold": [
+      0.7757143446387624,
+      0.7752277157786419,
+      0.7712242698134681,
+      0.7729529488291053,
+      0.7695662764100157
+    ],
+    "auc_mean": 0.7729371110939987,
+    "auc_std": 0.002334801856104956,
+    "n_splits": 5,
+    "n_rows": 49785
+  },
+  "combined": {
+    "feature_count": 277,
+    "auc_per_fold": [
+      0.7824720482284848,
+      0.7660952171662965,
+      0.7668712220161025,
+      0.7696483359518942,
+      0.7729087005628329
+    ],
+    "auc_mean": 0.7715991047851221,
+    "auc_std": 0.005939479668498081,
+    "n_splits": 5,
+    "n_rows": 51155
+  },
+  "top_20_feature_importance_combined": [
+    {
+      "feature": "card_gene_candidates",
+      "importance": 0.5583587288856506
+    },
+    {
+      "feature": "card_associated_antibiotics",
+      "importance": 0.29624587297439575
+    },
+    {
+      "feature": "card_resistance_mechanism",
+      "importance": 0.05897742882370949
+    },
+    {
+      "feature": "species",
+      "importance": 0.01793302409350872
+    },
+    {
+      "feature": "antibiotic_name",
+      "importance": 0.006177621427923441
+    },
+    {
+      "feature": "sample_type",
+      "importance": 0.005666094832122326
+    },
+    {
+      "feature": "kmer4_SVLA",
+      "importance": 0.005587743129581213
+    },
+    {
+      "feature": "site",
+      "importance": 0.005218775011599064
+    },
+    {
+      "feature": "antibiotic_class",
+      "importance": 0.004597858525812626
+    },
+    {
+      "feature": "kmer4_YTSG",
+      "importance": 0.004570742603391409
+    },
+    {
+      "feature": "age",
+      "importance": 0.0043100290931761265
+    },
+    {
+      "feature": "resolved_gene_name_norm",
+      "importance": 0.004115603398531675
+    },
+    {
+      "feature": "Infection_Freq",
+      "importance": 0.003702258225530386
+    },
+    {
+      "feature": "Hypertension",
+      "importance": 0.0036348479334264994
+    },
+    {
+      "feature": "aro_antibiotic_class",
+      "importance": 0.0036276166792958975
+    },
+    {
+      "feature": "Hospital_before",
+      "importance": 0.0035369377583265305
+    },
+    {
+      "feature": "gender",
+      "importance": 0.0035168700851500034
+    },
+    {
+      "feature": "Diabetes",
+      "importance": 0.0032296786084771156
+    },
+    {
+      "feature": "aro_match_count",
+      "importance": 0.002769993618130684
+    },
+    {
+      "feature": "card_amr_gene_family",
+      "importance": 0.0026214062236249447
+    }
+  ]
+}

@@ -1,15 +1,21 @@
-from __future__ import annotations
-
+import base64
 import json
-from io import BytesIO
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime
 from pathlib import Path
-from urllib import error, request
 
 import joblib
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 import shap
 import streamlit as st
+from sklearn.decomposition import PCA
+
+from track_b_model import get_transformed_feature_names, prepare_bundle_features
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -17,681 +23,709 @@ ARTIFACTS_DIR = SCRIPT_DIR / "artifacts"
 MODEL_PATH = ARTIFACTS_DIR / "stacked_model_tuned.pkl"
 SHAP_FEATURES_PATH = ARTIFACTS_DIR / "shap_features.json"
 SHAP_GLOBAL_PATH = ARTIFACTS_DIR / "shap_global.png"
-APP_METADATA_PATH = ARTIFACTS_DIR / "app_metadata.json"
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+DATA_PATH = ARTIFACTS_DIR / "unified_dataset_final.csv"
+
+BACKGROUND = "#0a0a0f"
+CARD_BG = "#111118"
+BORDER = "#1e1e2e"
+INPUT_BG = "#1a1a2e"
+ACCENT = "#00d4ff"
+RESISTANT = "#ff4757"
+SUSCEPTIBLE = "#2ed573"
+TEXT_MUTED = "#a0a0b0"
 
 
-st.set_page_config(
-    page_title="AI Clinical Advisor",
-    page_icon="🩺",
-    layout="wide",
-)
+st.set_page_config(page_title="Horizon | Track B", layout="wide", page_icon="\U0001F9EC")
 
-st.markdown(
-    """
-    <style>
+
+CSS = f"""
+<style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    .stApp {
-        background: #0a0a0f;
-        color: #f3f6fb;
-        font-family: "Inter", system-ui, sans-serif;
-    }
-    .block-container {
-        padding-top: 1.2rem;
-        padding-bottom: 2.4rem;
-        max-width: 1240px;
-    }
-    [data-testid="stHeader"] {
-        background: rgba(10, 10, 15, 0.88);
-    }
-    [data-testid="stAppViewContainer"] {
-        background: #0a0a0f;
-    }
-    [data-testid="stToolbar"] {
-        right: 1rem;
-    }
-    h1, h2, h3, h4, h5, h6, p, div, span, label {
-        font-family: "Inter", system-ui, sans-serif;
-    }
-    .hero-title {
-        font-size: 3rem;
+    html, body, [class*="css"]  {{
+        font-family: Inter, system-ui, sans-serif;
+    }}
+    .stApp {{
+        background: {BACKGROUND};
+        color: #f5f7fb;
+    }}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+    [data-testid="stHeader"] {{display: none;}}
+    [data-testid="stSidebar"] {{
+        background: #0d0d15;
+        border-right: 1px solid {BORDER};
+    }}
+    [data-testid="stSidebar"] * {{
+        color: #f5f7fb;
+    }}
+    .block-container {{
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+        max-width: 1800px;
+    }}
+    .card {{
+        background: {CARD_BG};
+        border: 1px solid {BORDER};
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        height: 100%;
+    }}
+    .metric-card {{
+        background: {CARD_BG};
+        border: 1px solid {BORDER};
+        border-radius: 12px;
+        padding: 18px 20px;
+        min-height: 122px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }}
+    .metric-icon {{
+        font-size: 1.25rem;
+        margin-bottom: 10px;
+        color: {ACCENT};
+    }}
+    .metric-label {{
+        color: {TEXT_MUTED};
+        font-size: 0.86rem;
+        margin-bottom: 8px;
+    }}
+    .metric-value {{
+        color: #f5f7fb;
+        font-size: 1.8rem;
         font-weight: 800;
-        line-height: 1.05;
-        margin-bottom: 0.18rem;
-        background: linear-gradient(90deg, #ffffff 0%, #9ee9ff 45%, #00d4ff 100%);
+        line-height: 1.1;
+    }}
+    .metric-sub {{
+        color: {ACCENT};
+        font-size: 0.82rem;
+        margin-top: 6px;
+    }}
+    .hero-title {{
+        font-size: 2.3rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #ffffff 0%, {ACCENT} 55%, #7a5cff 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    .hero-subtitle {
-        color: #a0a0b0;
-        font-size: 1rem;
-        font-weight: 500;
-        margin-bottom: 0.65rem;
-    }
-    .hero-divider {
-        height: 1px;
-        width: 100%;
-        background: linear-gradient(90deg, rgba(0, 212, 255, 0.95) 0%, rgba(0, 212, 255, 0.05) 100%);
-        margin-bottom: 1.1rem;
-    }
-    .warning-banner {
-        background: rgba(255, 193, 7, 0.08);
-        border: 1px solid rgba(255, 193, 7, 0.24);
-        color: #ffd86b;
-        border-radius: 12px;
-        padding: 0.9rem 1rem;
-        margin-bottom: 1rem;
-    }
-    .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.8rem;
-        margin-bottom: 1rem;
-    }
-    .metric-card {
-        background: #111118;
-        border: 1px solid #1e1e2e;
-        border-radius: 12px;
-        padding: 0.95rem 1rem;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
-    }
-    .metric-label {
-        color: #a0a0b0;
-        font-size: 0.88rem;
-        margin-bottom: 0.3rem;
-    }
-    .metric-value {
-        color: #ffffff;
-        font-size: 1.45rem;
-        font-weight: 700;
-    }
-    .panel {
-        background: #111118;
-        border: 1px solid #1e1e2e;
-        border-radius: 12px;
-        padding: 1.1rem 1.2rem;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
-    }
-    .section-title {
-        color: #ffffff;
-        font-size: 1.08rem;
-        font-weight: 700;
-        margin-bottom: 0.8rem;
-    }
-    .risk-card {
-        background: #111118;
-        border: 1px solid #1e1e2e;
-        border-radius: 12px;
-        padding: 1.15rem 1.2rem;
-        min-height: 230px;
-    }
-    .result-card {
-        text-align: center;
-        padding-top: 1rem;
-    }
-    .result-label {
-        font-size: 0.82rem;
-        letter-spacing: 0.14rem;
-        color: #a0a0b0;
-        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }}
+    .hero-subtitle {{
+        color: {TEXT_MUTED};
+        font-size: 1.02rem;
         margin-bottom: 0.75rem;
-    }
-    .result-value {
+    }}
+    .divider {{
+        height: 2px;
+        background: linear-gradient(90deg, {ACCENT}, transparent);
+        border-radius: 999px;
+        margin-bottom: 0.9rem;
+    }}
+    .warning-banner {{
+        background: rgba(255, 184, 0, 0.12);
+        border: 1px solid rgba(255, 184, 0, 0.35);
+        color: #f5d97b;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }}
+    .section-title {{
+        font-size: 1.02rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 0.9rem;
+    }}
+    .section-step {{
+        font-size: 0.82rem;
+        color: {ACCENT};
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
+        font-weight: 700;
+    }}
+    .prediction-text {{
+        text-align: center;
         font-size: 2rem;
         font-weight: 800;
-        margin-bottom: 0.55rem;
-    }
-    .result-probability {
-        color: #d6deea;
-        font-size: 1rem;
-        margin-bottom: 0.75rem;
-    }
-    .glow-resistant {
-        box-shadow: 0 0 0 1px rgba(255, 71, 87, 0.22), 0 0 32px rgba(255, 71, 87, 0.12);
-    }
-    .glow-susceptible {
-        box-shadow: 0 0 0 1px rgba(46, 213, 115, 0.2), 0 0 32px rgba(46, 213, 115, 0.1);
-    }
-    .meter-wrap {
-        background: #1a1a2e;
+        margin: 0.3rem 0 0.25rem;
+    }}
+    .prediction-sub {{
+        text-align: center;
+        color: {TEXT_MUTED};
+        margin-bottom: 0.85rem;
+    }}
+    .progress-shell {{
+        width: 100%;
+        height: 14px;
         border-radius: 999px;
+        background: #191926;
         overflow: hidden;
-        height: 18px;
-        margin-top: 0.45rem;
-        margin-bottom: 0.6rem;
-        border: 1px solid #1e1e2e;
-    }
-    .meter-bar {
+        border: 1px solid {BORDER};
+    }}
+    .progress-fill {{
         height: 100%;
         border-radius: 999px;
-    }
-    .small-note {
-        color: #a0a0b0;
-        font-size: 0.9rem;
-    }
-    .shap-bar-list {
-        display: grid;
-        gap: 0.72rem;
-        margin-top: 0.55rem;
-    }
-    .shap-row {
-        display: grid;
-        gap: 0.35rem;
-    }
-    .shap-topline {
+        transition: width 0.3s ease;
+    }}
+    .local-bar {{
+        margin-bottom: 14px;
+    }}
+    .local-bar-head {{
         display: flex;
         justify-content: space-between;
-        gap: 1rem;
-        font-size: 0.92rem;
-    }
-    .shap-name {
-        color: #eaf3fb;
+        gap: 12px;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }}
+    .local-bar-name {{
+        color: #ffffff;
         font-weight: 600;
-    }
-    .shap-value {
-        color: #9ddfff;
+    }}
+    .local-bar-value {{
+        color: {TEXT_MUTED};
         font-variant-numeric: tabular-nums;
-    }
-    .shap-track {
-        background: #1a1a2e;
-        height: 10px;
+    }}
+    .local-bar-track {{
+        width: 100%;
+        height: 12px;
         border-radius: 999px;
+        background: #171726;
+        border: 1px solid {BORDER};
         overflow: hidden;
-        border: 1px solid #1e1e2e;
-    }
-    .shap-fill {
+    }}
+    .local-bar-fill {{
         height: 100%;
         border-radius: 999px;
-        background: linear-gradient(90deg, #00d4ff 0%, #6ce7ff 100%);
-    }
-    .advisor-card {
-        background: #111118;
-        border: 1px solid #1e1e2e;
-        border-left: 4px solid #00d4ff;
+        background: linear-gradient(90deg, {ACCENT}, #7a5cff);
+        box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+    }}
+    .advisor-box {{
+        background: linear-gradient(135deg, rgba(64, 45, 145, 0.4), rgba(0, 68, 122, 0.35)), {CARD_BG};
+        border: 1px solid rgba(0, 212, 255, 0.24);
+        border-radius: 14px;
+        padding: 20px;
+        min-height: 320px;
+        box-shadow: inset 0 0 30px rgba(0, 212, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35);
+    }}
+    .advisor-card {{
+        background: rgba(11, 16, 27, 0.48);
+        border: 1px solid rgba(0, 212, 255, 0.15);
         border-radius: 12px;
-        padding: 1rem 1.1rem;
-        margin-top: 0.8rem;
-        white-space: pre-wrap;
-        color: #eaf3fb;
-    }
-    .stButton > button {
-        background: #00d4ff;
-        color: #071018;
-        border: none;
-        border-radius: 12px;
+        padding: 18px;
+        height: 100%;
+    }}
+    .advisor-title {{
+        font-size: 1.1rem;
         font-weight: 700;
-        padding: 0.75rem 1rem;
-        transition: all 0.18s ease-in-out;
-        box-shadow: 0 10px 24px rgba(0, 212, 255, 0.16);
-    }
-    .stButton > button:hover {
-        background: #6ce7ff;
-        color: #04080d;
-        transform: translateY(-1px);
-    }
-    .stButton > button:focus {
-        outline: 2px solid rgba(0, 212, 255, 0.35);
-        outline-offset: 1px;
-    }
-    [data-testid="stForm"] {
+        margin-bottom: 0.85rem;
+    }}
+    .pill {{
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: rgba(0, 212, 255, 0.12);
+        color: {ACCENT};
+        margin-right: 8px;
+        margin-bottom: 8px;
+    }}
+    .small-note {{
+        color: {TEXT_MUTED};
+        font-size: 0.87rem;
+        line-height: 1.55;
+    }}
+    .stButton > button, .stDownloadButton > button {{
+        background: {ACCENT};
+        color: #07111a;
         border: none;
-        padding: 0;
-    }
-    label, [data-testid="stWidgetLabel"] {
-        color: #a0a0b0 !important;
-        font-weight: 500 !important;
-    }
-    .stSelectbox [data-baseweb="select"] > div,
-    .stNumberInput div[data-baseweb="input"] > div,
-    .stTextInput div[data-baseweb="input"] > div {
-        background: #1a1a2e !important;
-        border: 1px solid #1e1e2e !important;
-        border-radius: 10px !important;
-        color: #f3f6fb !important;
-    }
-    .stSelectbox [data-baseweb="select"] input,
-    .stNumberInput input,
-    .stTextInput input {
-        color: #f3f6fb !important;
-    }
-    .stSelectbox [data-baseweb="select"] > div:focus-within,
-    .stNumberInput div[data-baseweb="input"] > div:focus-within,
-    .stTextInput div[data-baseweb="input"] > div:focus-within {
-        border-color: #00d4ff !important;
-        box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.2) !important;
-    }
-    [data-testid="stImage"] img,
-    [data-testid="stDataFrame"] {
         border-radius: 12px;
-        border: 1px solid #1e1e2e;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-def safe_fill_categorical(series: pd.Series, fallback: str) -> pd.Series:
-    return (
-        series.astype(object)
-        .where(series.notna(), fallback)
-        .astype(str)
-        .replace({"nan": fallback, "": fallback})
-    )
-
-
-def get_feature_names(preprocessor: dict) -> list[str]:
-    return preprocessor["categorical_columns"] + preprocessor["numeric_columns"]
-
-
-def transform_features(X: pd.DataFrame, preprocessor: dict) -> np.ndarray:
-    feature_columns = preprocessor["feature_columns"]
-    categorical_columns = preprocessor["categorical_columns"]
-    numeric_columns = preprocessor["numeric_columns"]
-
-    X = X.copy().reindex(columns=feature_columns)
-    parts = []
-
-    if categorical_columns:
-        cat_values = preprocessor["cat_imputer"].transform(X[categorical_columns])
-        cat_encoded = preprocessor["cat_encoder"].transform(cat_values)
-        parts.append(cat_encoded)
-
-    if numeric_columns:
-        num_values = preprocessor["num_imputer"].transform(X[numeric_columns])
-        parts.append(num_values)
-
-    if not parts:
-        raise ValueError("No feature columns available for inference.")
-
-    return np.hstack(parts).astype(np.float32)
+        font-weight: 800;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.22);
+    }}
+    .stButton > button:hover, .stDownloadButton > button:hover {{
+        background: #37defc;
+        color: #07111a;
+    }}
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="input"] > div,
+    .stNumberInput div[data-baseweb="input"] > div {{
+        background: {INPUT_BG} !important;
+        border: 1px solid {BORDER} !important;
+        color: #f5f7fb !important;
+        border-radius: 10px !important;
+    }}
+    label, .stSelectbox label, .stNumberInput label {{
+        color: {TEXT_MUTED} !important;
+        font-weight: 600 !important;
+    }}
+</style>
+"""
 
 
 @st.cache_resource
-def load_runtime_resources():
-    missing = [
-        path.name
-        for path in [MODEL_PATH, SHAP_FEATURES_PATH, SHAP_GLOBAL_PATH, APP_METADATA_PATH]
-        if not path.exists()
-    ]
-    if missing:
-        raise FileNotFoundError(f"Missing Track B artifacts: {', '.join(missing)}")
+def load_assets():
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Missing model artifact: {MODEL_PATH}")
+    if not SHAP_FEATURES_PATH.exists():
+        raise FileNotFoundError(f"Missing SHAP features artifact: {SHAP_FEATURES_PATH}")
+    if not DATA_PATH.exists():
+        raise FileNotFoundError(f"Missing unified dataset: {DATA_PATH}")
 
     model_bundle = joblib.load(MODEL_PATH)
     with open(SHAP_FEATURES_PATH, "r", encoding="utf-8") as handle:
         shap_features = json.load(handle)
-    shap_global_bytes = SHAP_GLOBAL_PATH.read_bytes()
-
-    with open(APP_METADATA_PATH, "r", encoding="utf-8") as handle:
-        app_metadata = json.load(handle)
-
-    xgb_model = model_bundle["model"].named_estimators_["xgb"]
-    explainer = shap.TreeExplainer(xgb_model)
-
-    return {
-        "model_bundle": model_bundle,
-        "shap_features": shap_features,
-        "shap_global_bytes": shap_global_bytes,
-        "species_options": app_metadata["species_options"],
-        "site_options": app_metadata["site_options"],
-        "sample_type_options": app_metadata["sample_type_options"],
-        "antibiotic_options": app_metadata["antibiotic_options"],
-        "antibiotic_class_options": app_metadata["antibiotic_class_options"],
-        "antibiotic_class_mode": app_metadata["antibiotic_class_mode"],
-        "aro_match_median": app_metadata["aro_match_median"],
-        "explainer": explainer,
-    }
+    data = pd.read_csv(DATA_PATH)
+    shap_global_b64 = None
+    if SHAP_GLOBAL_PATH.exists():
+        shap_global_b64 = base64.b64encode(SHAP_GLOBAL_PATH.read_bytes()).decode("utf-8")
+    return model_bundle, shap_features, data, shap_global_b64
 
 
-def build_inference_frame(form_values: dict, resources: dict) -> tuple[pd.DataFrame, np.ndarray, list[str]]:
-    bundle = resources["model_bundle"]
-    df_input = pd.DataFrame([form_values])
+@st.cache_resource
+def build_pca_projection():
+    model_bundle, _, data, _ = load_assets()
+    mendeley = data[data["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
+    if mendeley.empty:
+        raise ValueError("No Mendeley rows found for PCA projection.")
 
-    df_input["source_dataset"] = "mendeley"
-    df_input["species_clean"] = safe_fill_categorical(df_input.get("species"), "unknown_species")
-    df_input["antibiotic_class_clean"] = safe_fill_categorical(df_input.get("antibiotic_class"), "unknown_class")
-    df_input["antibiotic_species_interaction"] = (
-        df_input["antibiotic_class_clean"] + "__" + df_input["species_clean"]
+    frame = mendeley.copy()
+    label_series = frame["resistance_label"].astype(str).str.upper().replace({"I": "S"})
+    matrix = prepare_bundle_features(frame, model_bundle)
+    pca = PCA(n_components=3, random_state=42)
+    coords = pca.fit_transform(matrix)
+
+    projection = pd.DataFrame(
+        {
+            "pc1": coords[:, 0],
+            "pc2": coords[:, 1],
+            "pc3": coords[:, 2],
+            "label_name": np.where(label_series.eq("R"), "Resistant", "Susceptible"),
+        }
     )
-
-    feature_engineering = bundle["feature_engineering"]
-    global_rate = float(feature_engineering["global_rate"])
-    class_rate = feature_engineering["antibiotic_class_rate_map"]
-    species_rate = feature_engineering["species_rate_map"]
-
-    df_input["antibiotic_class_resistance_rate"] = (
-        df_input["antibiotic_class_clean"].map(class_rate).fillna(global_rate)
-    )
-    df_input["species_resistance_rate"] = df_input["species_clean"].map(species_rate).fillna(global_rate)
-    df_input["aro_antibiotic_class"] = df_input["antibiotic_class"]
-    df_input["aro_match_count"] = float(resources["aro_match_median"].get(form_values["antibiotic_class"], 0.0))
-    df_input["fasta_sequence_found"] = 0.0
-
-    for column in bundle["selected_kmer_columns"]:
-        df_input[column] = 0.0
-
-    feature_frame = df_input[bundle["feature_columns"]].copy()
-    transformed = transform_features(feature_frame, bundle["preprocessor"])
-    feature_names = get_feature_names(bundle["preprocessor"])
-    return df_input, transformed, feature_names
+    return pca, projection
 
 
-def call_claude_clinical_advisor(api_key: str, payload: dict) -> str:
+def call_groq_advisor(payload: dict) -> str:
+    api_key = st.secrets.get("OPENROUTER_API_KEY")
+    if not api_key:
+        return "Missing `OPENROUTER_API_KEY` in Streamlit secrets. Add the key before using the clinical advisor."
+
     prompt = f"""
-You are an antimicrobial stewardship clinical advisor helping interpret a research model output.
+You are a clinical antimicrobial stewardship advisor. Interpret this research model output clearly and concisely.
 
-Patient and sample inputs:
-- Species: {payload['species']}
-- Antibiotic: {payload['antibiotic_name']}
-- Antibiotic class: {payload['antibiotic_class']}
-- Age: {payload['age']}
-- Gender: {payload['gender']}
-- Site: {payload['site']}
-- Sample type: {payload['sample_type']}
-- Prior hospitalisation: {payload['Hospital_before']}
-- Hypertension: {payload['Hypertension']}
-- Diabetes: {payload['Diabetes']}
-- Infection frequency: {payload['Infection_Freq']}
-
-Model output:
-- Prediction: {payload['prediction_label']}
-- Confidence: {payload['confidence_pct']}%
-- Resistant probability: {payload['resistant_probability_pct']}%
-
-Top model features for this prediction:
-{json.dumps(payload['top_shap_features'], indent=2)}
+Case ID: {payload['case_id']}
+Patient inputs: {json.dumps(payload['inputs'], indent=2)}
+Prediction summary: {json.dumps(payload['model_results'], indent=2)}
+Top local SHAP features: {json.dumps(payload['top_local_features'], indent=2)}
 
 Provide:
-1. A short clinical interpretation of the model output.
-2. Key patient or microbiology factors driving concern.
-3. Practical antibiotic stewardship recommendations or cautionary next steps.
-4. A short note on uncertainty and why culture/lab validation is still required.
+1. Clinical interpretation
+2. Key drivers
+3. Stewardship recommendations (2 bullets)
+4. Uncertainty note
 
-Keep it concise, clinician-facing, and clearly structured.
-"""
+Keep the output concise, clinician-facing, and structured.
+""".strip()
 
     body = {
-        "model": CLAUDE_MODEL,
-        "max_tokens": 700,
-        "temperature": 0.2,
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
         "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2,
     }
-
-    req = request.Request(
-        "https://api.anthropic.com/v1/messages",
+    request = urllib.request.Request(
+        "https://openrouter.ai/api/v1/chat/completions",
         data=json.dumps(body).encode("utf-8"),
         headers={
-            "content-type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "https://github.com/gaurav-3821/Horizon",
+            "X-Title": "Horizon AI Clinical Advisor",
         },
         method="POST",
     )
-
     try:
-        with request.urlopen(req, timeout=60) as response:
-            raw = json.loads(response.read().decode("utf-8"))
-    except error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="ignore")
-        raise RuntimeError(f"Anthropic API error {exc.code}: {detail}") from exc
-    except error.URLError as exc:
-        raise RuntimeError(f"Anthropic API connection failed: {exc.reason}") from exc
-
-    content = raw.get("content", [])
-    text_parts = [block.get("text", "") for block in content if block.get("type") == "text"]
-    return "\n\n".join(part for part in text_parts if part).strip()
-
-
-def render_meter(confidence: float, label: str):
-    pct = max(0.0, min(100.0, confidence * 100.0))
-    color = "#ff4757" if label == "Resistant" else "#2ed573"
-    st.markdown(
-        f"""
-        <div class="meter-wrap">
-            <div class="meter-bar" style="width: {pct:.1f}%; background: {color};"></div>
-        </div>
-        <div class="small-note">Confidence meter: {pct:.1f}%</div>
-        """,
-        unsafe_allow_html=True,
-    )
+        with urllib.request.urlopen(request, timeout=60) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        return payload["choices"][0]["message"]["content"].strip()
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = exc.read().decode("utf-8")
+        except Exception:
+            detail = str(exc)
+        return f"OpenRouter API error: {detail}"
+    except Exception as exc:
+        return f"OpenRouter API call failed: {exc}"
 
 
-def render_top_shap_bars(features: list[dict]):
-    if not features:
-        st.info("No local SHAP features available for this prediction.")
-        return
+def make_input_frame(inputs: dict) -> pd.DataFrame:
+    return pd.DataFrame([inputs])
 
-    max_abs = max(feature["abs_shap"] for feature in features) or 1.0
+
+def get_xgb_model_from_stack(stack_model):
+    if hasattr(stack_model, "named_estimators_") and "xgb" in stack_model.named_estimators_:
+        return stack_model.named_estimators_["xgb"]
+    if hasattr(stack_model, "estimators_") and len(stack_model.estimators_) >= 1:
+        return stack_model.estimators_[0]
+    raise ValueError("Unable to extract XGBoost base model from stacked ensemble.")
+
+
+def compute_local_shap(model_bundle: dict, input_df: pd.DataFrame):
+    matrix = prepare_bundle_features(input_df, model_bundle)
+    stack_model = model_bundle["model"]
+    xgb_model = get_xgb_model_from_stack(stack_model)
+    explainer = shap.TreeExplainer(xgb_model)
+    shap_values = explainer.shap_values(matrix)
+    if isinstance(shap_values, list):
+        shap_row = np.asarray(shap_values[1][0])
+    else:
+        shap_row = np.asarray(shap_values[0])
+    feature_names = get_transformed_feature_names(model_bundle["preprocessor"])
     rows = []
-    for feature in features:
-        width = max(8.0, (feature["abs_shap"] / max_abs) * 100.0)
+    for name, value in zip(feature_names, shap_row):
         rows.append(
+            {
+                "feature": str(name),
+                "value": float(value),
+                "abs_value": float(abs(value)),
+                "direction": "positive" if value >= 0 else "negative",
+            }
+        )
+    top_rows = sorted(rows, key=lambda item: item["abs_value"], reverse=True)[:5]
+    return matrix, top_rows
+
+
+def render_local_shap_bars(top_features: list[dict]):
+    if not top_features:
+        st.info("No local SHAP features available.")
+        return
+    max_value = max(item["abs_value"] for item in top_features) or 1.0
+    html_parts = []
+    for item in top_features:
+        width_pct = max(8.0, (item["abs_value"] / max_value) * 100.0)
+        html_parts.append(
             f"""
-            <div class="shap-row">
-                <div class="shap-topline">
-                    <span class="shap-name">{feature['feature']}</span>
-                    <span class="shap-value">{feature['shap_value']:.4f}</span>
+            <div class="local-bar">
+                <div class="local-bar-head">
+                    <span class="local-bar-name">{item['feature']}</span>
+                    <span class="local-bar-value">{item['value']:+.4f}</span>
                 </div>
-                <div class="shap-track">
-                    <div class="shap-fill" style="width: {width:.1f}%"></div>
+                <div class="local-bar-track">
+                    <div class="local-bar-fill" style="width:{width_pct:.2f}%"></div>
                 </div>
             </div>
             """
         )
-    st.markdown(f'<div class="shap-bar-list">{"".join(rows)}</div>', unsafe_allow_html=True)
+    html = "".join(html_parts)
+    st.markdown(html, unsafe_allow_html=True)
 
 
-try:
-    resources = load_runtime_resources()
-except Exception as exc:
-    st.error(f"Failed to load Track B runtime artifacts: {exc}")
-    st.stop()
-
-
-st.markdown('<div class="hero-title">AI Clinical Advisor</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-subtitle">Track B — Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-divider"></div>', unsafe_allow_html=True)
-
-st.markdown(
-    """
-    <div class="warning-banner">
-    ⚠️ Model trained on Mendeley AMR dataset. For research use only. Validate before clinical deployment.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-    <div class="metric-grid">
-        <div class="metric-card">
-            <div class="metric-label">Model AUC</div>
-            <div class="metric-value">0.8540</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">Training Samples</div>
-            <div class="metric-value">1,370</div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-left, right = st.columns([1.15, 0.85], gap="large")
-
-with left:
-    st.markdown('<div class="panel">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Patient &amp; Sample Inputs</div>', unsafe_allow_html=True)
-
-    default_antibiotic = resources["antibiotic_options"][0] if resources["antibiotic_options"] else "IMIPENEM"
-    default_class = resources["antibiotic_class_mode"].get(default_antibiotic, "carbapenem")
-
-    with st.form("clinical_input_form", border=False):
-        species = st.selectbox(
-            "Species",
-            options=resources["species_options"] or ["unknown"],
-            index=0,
-        )
-        antibiotic_name = st.selectbox(
-            "Antibiotic Name",
-            options=resources["antibiotic_options"] or ["IMIPENEM"],
-            index=(
-                resources["antibiotic_options"].index(default_antibiotic)
-                if default_antibiotic in resources["antibiotic_options"]
-                else 0
-            ),
-        )
-        default_class = resources["antibiotic_class_mode"].get(antibiotic_name, default_class)
-        antibiotic_class = st.selectbox(
-            "Antibiotic Class",
-            options=resources["antibiotic_class_options"] or ["carbapenem"],
-            index=(
-                resources["antibiotic_class_options"].index(default_class)
-                if default_class in resources["antibiotic_class_options"]
-                else 0
-            ),
-        )
-
-        col1, col2 = st.columns(2)
-        with col1:
-            age = st.number_input("Age", min_value=0, max_value=120, value=35, step=1)
-            gender = st.selectbox("Gender", ["F", "M", "Unknown"])
-            site = st.selectbox("Site", options=resources["site_options"] or ["IFE"], index=0)
-            Hospital_before = st.selectbox("Hospital Before", ["Yes", "No", "Unknown"])
-            Hypertension = st.selectbox("Hypertension", ["Yes", "No", "Unknown"])
-        with col2:
-            sample_type = st.selectbox("Sample Type", options=resources["sample_type_options"] or ["T"], index=0)
-            Diabetes = st.selectbox("Diabetes", ["Yes", "No", "Unknown"])
-            Infection_Freq = st.selectbox("Infection Frequency", ["First", "Recurrent", "Unknown"])
-
-        predict = st.form_submit_button("Predict Resistance", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with right:
-    st.markdown('<div class="panel">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Model Explainability</div>', unsafe_allow_html=True)
-    st.image(
-        BytesIO(resources["shap_global_bytes"]),
-        caption="Global SHAP summary (XGBoost base model)",
-        use_container_width=True,
+def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | None):
+    fig = px.scatter_3d(
+        projection_df,
+        x="pc1",
+        y="pc2",
+        z="pc3",
+        color="label_name",
+        color_discrete_map={"Susceptible": SUSCEPTIBLE, "Resistant": RESISTANT},
+        template="plotly_dark",
+        title="Proximity to Historical Data Clusters",
+        opacity=0.8,
     )
-    st.caption("Top global drivers from the tuned Mendeley-only model")
-    global_df = pd.DataFrame(resources["shap_features"])
-    st.dataframe(global_df, use_container_width=True, hide_index=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    fig.update_traces(marker=dict(size=5))
+    fig.update_layout(
+        paper_bgcolor=CARD_BG,
+        plot_bgcolor=CARD_BG,
+        margin=dict(l=0, r=0, t=46, b=0),
+        legend_title_text="Historical label",
+        scene=dict(
+            bgcolor=CARD_BG,
+            xaxis=dict(backgroundcolor=CARD_BG, gridcolor="#2c2c3a", zerolinecolor="#2c2c3a"),
+            yaxis=dict(backgroundcolor=CARD_BG, gridcolor="#2c2c3a", zerolinecolor="#2c2c3a"),
+            zaxis=dict(backgroundcolor=CARD_BG, gridcolor="#2c2c3a", zerolinecolor="#2c2c3a"),
+        ),
+    )
+    if star_coords is not None:
+        fig.add_trace(
+            go.Scatter3d(
+                x=[star_coords[0]],
+                y=[star_coords[1]],
+                z=[star_coords[2]],
+                mode="markers",
+                marker=dict(size=14, color="#ffffff", symbol="diamond", line=dict(color=ACCENT, width=3)),
+                name="Current patient",
+            )
+        )
+    return fig
 
 
-if predict:
-    form_values = {
-        "species": species,
-        "antibiotic_name": antibiotic_name,
-        "antibiotic_class": antibiotic_class,
-        "age": float(age),
-        "gender": gender,
-        "site": site,
-        "sample_type": sample_type,
-        "Hospital_before": Hospital_before,
-        "Hypertension": Hypertension,
-        "Diabetes": Diabetes,
-        "Infection_Freq": Infection_Freq,
-    }
-
-    try:
-        _, transformed_row, feature_names = build_inference_frame(form_values, resources)
-        model_bundle = resources["model_bundle"]
-        probability_resistant = float(model_bundle["model"].predict_proba(transformed_row)[0, 1])
-        prediction_label = "Resistant" if probability_resistant >= 0.5 else "Susceptible"
-        confidence = probability_resistant if prediction_label == "Resistant" else (1.0 - probability_resistant)
-
-        shap_values = resources["explainer"].shap_values(transformed_row)
-        if isinstance(shap_values, list):
-            shap_values = shap_values[0]
-        sample_shap = np.asarray(shap_values)[0]
-        top_local_idx = np.argsort(np.abs(sample_shap))[::-1][:5]
-        top_local_features = [
-            {
-                "feature": feature_names[idx],
-                "shap_value": float(sample_shap[idx]),
-                "abs_shap": float(abs(sample_shap[idx])),
-            }
-            for idx in top_local_idx
+def extract_stewardship_recs(prediction_label: str, resistant_probability: float, top_features: list[dict]) -> list[str]:
+    drivers = ", ".join(item["feature"] for item in top_features[:2]) if top_features else "model drivers"
+    if prediction_label == "Resistant":
+        return [
+            f"Escalate stewardship review before empiric use; strongest model drivers: {drivers}.",
+            f"Resistant probability is {resistant_probability:.1%}; correlate with culture and susceptibility panel before action.",
         ]
-
-        st.session_state["track_b_result"] = {
-            "form_values": form_values,
-            "prediction_label": prediction_label,
-            "confidence": confidence,
-            "probability_resistant": probability_resistant,
-            "top_local_features": top_local_features,
-        }
-    except Exception as exc:
-        st.error(f"Inference failed: {exc}")
+    return [
+        f"Prediction favors susceptibility; confirm with culture and local antibiogram before de-escalation.",
+        f"Use {drivers} as context only; avoid single-model decisions without microbiology validation.",
+    ]
 
 
-result = st.session_state.get("track_b_result")
-
-if result:
-    st.markdown('<div class="section-title">Prediction Summary</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns([0.95, 1.05], gap="large")
-
-    with c1:
-        result_color = "#ff4757" if result["prediction_label"] == "Resistant" else "#2ed573"
-        glow_class = "glow-resistant" if result["prediction_label"] == "Resistant" else "glow-susceptible"
-        st.markdown(f'<div class="risk-card result-card {glow_class}">', unsafe_allow_html=True)
-        st.markdown('<div class="result-label">Prediction</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="result-value" style="color: {result_color};">{result["prediction_label"].upper()}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div class="result-probability">Confidence: {result["confidence"] * 100:.1f}%</div>',
-            unsafe_allow_html=True,
-        )
-        render_meter(result["confidence"], result["prediction_label"])
-        st.markdown(
-            f"<div class='small-note'>Resistant probability: {result['probability_resistant'] * 100:.1f}%</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with c2:
-        st.markdown('<div class="risk-card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Model Explainability</div>', unsafe_allow_html=True)
-        st.markdown(
-            "<div class='small-note'>Top 5 local feature contributions from the XGBoost base model.</div>",
-            unsafe_allow_html=True,
-        )
-        render_top_shap_bars(result["top_local_features"])
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="section-title">AI Clinical Advisor</div>', unsafe_allow_html=True)
+def render_metric_card(icon: str, label: str, value: str, subtext: str = ""):
     st.markdown(
-        """
-        <div class="panel">
-        Generate a clinician-facing interpretation using Claude. This uses patient inputs, the model output,
-        confidence score, and the top local SHAP features.
+        f"""
+        <div class="metric-card">
+            <div class="metric-icon">{icon}</div>
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{value}</div>
+            <div class="metric-sub">{subtext}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    if st.button("Generate Clinical Interpretation", use_container_width=True):
-        api_key = st.secrets.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            st.error("Missing `ANTHROPIC_API_KEY` in Streamlit secrets.")
+
+def main():
+    st.markdown(CSS, unsafe_allow_html=True)
+    st.sidebar.title("Horizon")
+    st.sidebar.caption("Track navigation")
+    st.sidebar.radio(
+        "Tracks",
+        ["🧬 Track B — Antibiotic Resistance", "🧪 Track A — Drug Toxicity", "🦠 Track C — Epidemic Spread"],
+        index=0,
+        label_visibility="collapsed",
+    )
+
+    model_bundle, shap_features, unified_df, shap_global_b64 = load_assets()
+    pca_model, projection_df = build_pca_projection()
+    mendeley_df = unified_df[unified_df["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
+
+    st.markdown('<div class="hero-title">AI Clinical Advisor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">Track B — Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="warning-banner">⚠️ Model trained on Mendeley AMR dataset. For research use only.</div>',
+        unsafe_allow_html=True,
+    )
+
+    prediction_payload = st.session_state.get("track_b_prediction_payload")
+    latency_display = "—"
+    if prediction_payload:
+        latency_display = f"{prediction_payload['latency_ms']:.1f} ms"
+
+    m1, m2, m3, m4 = st.columns(4, gap="small")
+    with m1:
+        render_metric_card("📈", "Model AUC", "0.8540", "Validated on Mendeley-only stack")
+    with m2:
+        render_metric_card("🧱", "Training Samples", "1,370", "Mendeley subset only")
+    with m3:
+        render_metric_card("🧬", "Model", "Mendeley Tuned Stack", "XGBoost + LightGBM + CatBoost")
+    with m4:
+        render_metric_card("⏱️", "Latency", latency_display, "Prediction path only")
+
+    left_col, center_col, right_col = st.columns([1.1, 2.0, 1.35], gap="large")
+
+    species_options = sorted(mendeley_df["species"].dropna().astype(str).unique().tolist())
+    antibiotic_options = sorted(mendeley_df["antibiotic_name"].dropna().astype(str).unique().tolist())
+    class_options = sorted(mendeley_df["antibiotic_class"].dropna().astype(str).unique().tolist())
+    gender_options = sorted(mendeley_df["gender"].dropna().astype(str).unique().tolist())
+    site_options = sorted(mendeley_df["site"].dropna().astype(str).unique().tolist())
+    sample_type_options = sorted(mendeley_df["sample_type"].dropna().astype(str).unique().tolist())
+    yes_no_options = sorted(mendeley_df["Hospital_before"].dropna().astype(str).unique().tolist())
+    infection_options = sorted(mendeley_df["Infection_Freq"].dropna().astype(str).unique().tolist())
+
+    with left_col:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Patient Input Command Center</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-step">1. Patient Details</div>', unsafe_allow_html=True)
+        species = st.selectbox("Species", species_options, index=0 if species_options else None)
+        age = st.number_input("Age", min_value=0, max_value=120, value=35, step=1)
+        gender = st.selectbox("Gender", gender_options, index=0 if gender_options else None)
+
+        st.markdown('<div class="section-step">2. Sample Info</div>', unsafe_allow_html=True)
+        antibiotic_name = st.selectbox("Antibiotic", antibiotic_options, index=0 if antibiotic_options else None)
+        antibiotic_class = st.selectbox("Antibiotic class", class_options, index=0 if class_options else None)
+        site = st.selectbox("Site", site_options, index=0 if site_options else None)
+        sample_type = st.selectbox("Sample type", sample_type_options, index=0 if sample_type_options else None)
+        hospital_before = st.selectbox("Hospital_before", yes_no_options, index=0 if yes_no_options else None)
+        hypertension = st.selectbox("Hypertension", sorted(mendeley_df["Hypertension"].dropna().astype(str).unique().tolist()), index=0)
+        diabetes = st.selectbox("Diabetes", sorted(mendeley_df["Diabetes"].dropna().astype(str).unique().tolist()), index=0)
+        infection_freq = st.selectbox("Infection_Freq", infection_options, index=0 if infection_options else None)
+
+        st.markdown('<div class="section-step">3. Resistance Prediction</div>', unsafe_allow_html=True)
+        predict_clicked = st.button("Predict Resistance", use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    current_star = None
+    local_top_features = []
+    prediction_label = "No prediction"
+    resistant_probability = None
+    confidence_pct = None
+    case_id = None
+
+    if predict_clicked:
+        input_payload = {
+            "species": species,
+            "antibiotic_name": antibiotic_name,
+            "antibiotic_class": antibiotic_class,
+            "age": int(age),
+            "gender": gender,
+            "site": site,
+            "sample_type": sample_type,
+            "Hospital_before": hospital_before,
+            "Hypertension": hypertension,
+            "Diabetes": diabetes,
+            "Infection_Freq": infection_freq,
+            "source_dataset": "mendeley",
+            "aro_match_count": 0,
+            "aro_antibiotic_class": antibiotic_class,
+            "fasta_sequence_found": 0,
+        }
+        input_df = make_input_frame(input_payload)
+        start_time = time.time()
+        matrix = prepare_bundle_features(input_df, model_bundle)
+        resistant_probability = float(model_bundle["model"].predict_proba(matrix)[:, 1][0])
+        latency_ms = (time.time() - start_time) * 1000.0
+        current_star = pca_model.transform(matrix)[0]
+        _, local_top_features = compute_local_shap(model_bundle, input_df)
+
+        prediction_label = "Resistant" if resistant_probability >= 0.5 else "Susceptible"
+        confidence_pct = float(max(resistant_probability, 1.0 - resistant_probability) * 100.0)
+        case_id = datetime.now().strftime("HZ-%Y-%m%d-%H%M")
+        report_dict = {
+            "case_id": case_id,
+            "timestamp": datetime.now().isoformat(),
+            "inputs": input_payload,
+            "model_results": {
+                "prediction": prediction_label,
+                "label": 1 if prediction_label == "Resistant" else 0,
+                "confidence_score": round(confidence_pct / 100.0, 4),
+                "resistant_probability": round(resistant_probability, 4),
+                "model_version": "Mendeley Tuned Stack",
+            },
+            "top_local_features": local_top_features,
+            "latency_ms": round(latency_ms, 2),
+            "pca_coords": [float(value) for value in current_star],
+        }
+        st.session_state["track_b_prediction_payload"] = report_dict
+        st.session_state.pop("track_b_advisor_text", None)
+        prediction_payload = report_dict
+        st.rerun()
+
+    if prediction_payload:
+        case_id = prediction_payload["case_id"]
+        resistant_probability = prediction_payload["model_results"]["resistant_probability"]
+        confidence_pct = prediction_payload["model_results"]["confidence_score"] * 100.0
+        prediction_label = prediction_payload["model_results"]["prediction"]
+        latency_display = f"{prediction_payload['latency_ms']:.1f} ms"
+        local_top_features = prediction_payload["top_local_features"]
+        if prediction_payload.get("pca_coords"):
+            current_star = np.asarray(prediction_payload["pca_coords"], dtype=float)
+
+    with center_col:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        figure = make_prediction_plot(projection_df, current_star)
+        st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
+        result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
+        if prediction_payload:
+            st.markdown(
+                f'<div class="prediction-text" style="color:{result_color};">{prediction_label.upper()}</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f'<div class="prediction-sub">Confidence {confidence_pct:.1f}% | Resistant probability {resistant_probability:.1%}</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+                <div class="progress-shell">
+                    <div class="progress-fill" style="width:{confidence_pct:.1f}%; background:{result_color}; box-shadow:0 0 20px {result_color};"></div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
         else:
-            payload = {
-                **result["form_values"],
-                "prediction_label": result["prediction_label"],
-                "confidence_pct": round(result["confidence"] * 100, 1),
-                "resistant_probability_pct": round(result["probability_resistant"] * 100, 1),
-                "top_shap_features": result["top_local_features"],
-            }
-            try:
-                with st.spinner("Consulting Claude..."):
-                    advisor_text = call_claude_clinical_advisor(api_key, payload)
-                st.markdown(f'<div class="advisor-card">{advisor_text}</div>', unsafe_allow_html=True)
-            except Exception as exc:
-                st.error(f"Clinical advisor request failed: {exc}")
+            st.markdown(
+                '<div class="prediction-sub">Run a prediction to place the current patient inside the historical cluster map.</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with right_col:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
+        st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
+        if shap_global_b64:
+            st.markdown(
+                f'<img src="data:image/png;base64,{shap_global_b64}" style="width:100%; border-radius:12px; margin-top:12px;" />',
+                unsafe_allow_html=True,
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown('<div style="height:16px"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
+        if prediction_payload:
+            render_local_shap_bars(local_top_features[:5])
+        else:
+            st.info("Run a prediction to compute local SHAP contributions.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="advisor-box">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">AI Clinical Advisor Box</div>', unsafe_allow_html=True)
+    advisor_left, advisor_right = st.columns([1.4, 1.0], gap="large")
+
+    with advisor_left:
+        st.markdown('<div class="advisor-card">', unsafe_allow_html=True)
+        st.markdown('<div class="advisor-title">Claude interpretation</div>', unsafe_allow_html=True)
+        if prediction_payload:
+            if st.button("Generate Clinical Interpretation", key="groq_advisor_btn"):
+                with st.spinner("Generating clinical interpretation..."):
+                    advisor_text = call_groq_advisor(prediction_payload)
+                    st.session_state["track_b_advisor_text"] = advisor_text
+            advisor_text = st.session_state.get("track_b_advisor_text")
+            if advisor_text:
+                st.write(advisor_text)
+            else:
+                st.write("Generate the Groq interpretation to populate this panel.")
+        else:
+            st.write("Run a prediction first. The advisor panel uses the current patient inputs and model output.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with advisor_right:
+        st.markdown('<div class="advisor-card">', unsafe_allow_html=True)
+        st.markdown('<div class="advisor-title">Key Drivers</div>', unsafe_allow_html=True)
+        if prediction_payload:
+            for item in local_top_features[:3]:
+                st.markdown(
+                    f'<span class="pill">{item["feature"]}: {item["value"]:+.4f}</span>',
+                    unsafe_allow_html=True,
+                )
+            st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="advisor-title">Stewardship Recs</div>', unsafe_allow_html=True)
+            for rec in extract_stewardship_recs(prediction_label, resistant_probability, local_top_features):
+                st.markdown(f"- {rec}")
+            st.markdown('<div class="advisor-title" style="margin-top:14px;">Note on Uncertainty</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="small-note">Culture validation mandatory. Research grade output only. Clinical correlation required before deployment or treatment decisions.</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
+            st.download_button(
+                "Download Structured Report (JSON)",
+                data=json.dumps(prediction_payload, indent=2),
+                file_name=f"{case_id or 'track_b_report'}.json",
+                mime="application/json",
+                use_container_width=True,
+            )
+        else:
+            st.write("No report yet. Predict first to unlock the structured summary.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+if __name__ == "__main__":
+    main()

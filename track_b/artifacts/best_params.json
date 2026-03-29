@@ -1,0 +1,15 @@
+{
+  "xgb_n_estimators": 188,
+  "xgb_learning_rate": 0.024938527079969228,
+  "xgb_max_depth": 6,
+  "xgb_subsample": 0.8047216857581969,
+  "xgb_colsample_bytree": 0.5019391181688049,
+  "xgb_min_child_samples": 92,
+  "lgbm_n_estimators": 104,
+  "lgbm_learning_rate": 0.01499807337178575,
+  "lgbm_max_depth": 9,
+  "lgbm_num_leaves": 185,
+  "lgbm_min_child_samples": 53,
+  "lgbm_subsample": 0.9958452721188177,
+  "lgbm_colsample_bytree": 0.5105634988112131
+}

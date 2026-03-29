@@ -1,0 +1,232 @@
+{
+  "auc_per_fold": [
+    0.7859033955288366,
+    0.7723818465936452,
+    0.7706341215832513,
+    0.7762037689924534,
+    0.7755641736705282
+  ],
+  "auc_mean": 0.776137461273743,
+  "auc_std": 0.005293352749225739,
+  "training_time_seconds": 14.121011000002909,
+  "selected_kmers_final": [
+    "kmer4_VRIT",
+    "kmer4_ASWV",
+    "kmer4_RALV",
+    "kmer4_ALVE",
+    "kmer4_SVLA",
+    "kmer4_ANAS",
+    "kmer4_SYVA",
+    "kmer4_YTSG",
+    "kmer4_GALA",
+    "kmer4_FKPL",
+    "kmer4_GMAV",
+    "kmer4_PGMA",
+    "kmer4_FELG",
+    "kmer4_ELGS",
+    "kmer4_LATY",
+    "kmer4_ATYT",
+    "kmer4_HKTG",
+    "kmer4_LGWE",
+    "kmer4_YGVK",
+    "kmer4_AYGV"
+  ],
+  "selected_kmers_by_fold": [
+    [
+      "kmer4_VRIT",
+      "kmer4_ASWV",
+      "kmer4_RALV",
+      "kmer4_ALVE",
+      "kmer4_SVLA",
+      "kmer4_ANAS",
+      "kmer4_SYVA",
+      "kmer4_YTSG",
+      "kmer4_GALA",
+      "kmer4_FKPL",
+      "kmer4_GMAV",
+      "kmer4_PGMA",
+      "kmer4_FELG",
+      "kmer4_ELGS",
+      "kmer4_LATY",
+      "kmer4_ATYT",
+      "kmer4_HKTG",
+      "kmer4_LGWE",
+      "kmer4_YGVK",
+      "kmer4_AYGV"
+    ],
+    [
+      "kmer4_VRIT",
+      "kmer4_ASWV",
+      "kmer4_RALV",
+      "kmer4_ALVE",
+      "kmer4_SVLA",
+      "kmer4_ANAS",
+      "kmer4_SYVA",
+      "kmer4_YTSG",
+      "kmer4_GALA",
+      "kmer4_FKPL",
+      "kmer4_GMAV",
+      "kmer4_PGMA",
+      "kmer4_FELG",
+      "kmer4_ELGS",
+      "kmer4_LATY",
+      "kmer4_ATYT",
+      "kmer4_HKTG",
+      "kmer4_LGWE",
+      "kmer4_YGVK",
+      "kmer4_AYGV"
+    ],
+    [
+      "kmer4_VRIT",
+      "kmer4_ASWV",
+      "kmer4_RALV",
+      "kmer4_ALVE",
+      "kmer4_SVLA",
+      "kmer4_ANAS",
+      "kmer4_SYVA",
+      "kmer4_YTSG",
+      "kmer4_GALA",
+      "kmer4_FKPL",
+      "kmer4_GMAV",
+      "kmer4_PGMA",
+      "kmer4_FELG",
+      "kmer4_ELGS",
+      "kmer4_LATY",
+      "kmer4_ATYT",
+      "kmer4_HKTG",
+      "kmer4_LGWE",
+      "kmer4_YGVK",
+      "kmer4_AYGV"
+    ],
+    [
+      "kmer4_VRIT",
+      "kmer4_ASWV",
+      "kmer4_RALV",
+      "kmer4_ALVE",
+      "kmer4_SVLA",
+      "kmer4_ANAS",
+      "kmer4_SYVA",
+      "kmer4_YTSG",
+      "kmer4_GALA",
+      "kmer4_FKPL",
+      "kmer4_GMAV",
+      "kmer4_PGMA",
+      "kmer4_FELG",
+      "kmer4_ELGS",
+      "kmer4_LATY",
+      "kmer4_ATYT",
+      "kmer4_HKTG",
+      "kmer4_LGWE",
+      "kmer4_YGVK",
+      "kmer4_AYGV"
+    ],
+    [
+      "kmer4_VRIT",
+      "kmer4_ASWV",
+      "kmer4_RALV",
+      "kmer4_ALVE",
+      "kmer4_SVLA",
+      "kmer4_ANAS",
+      "kmer4_SYVA",
+      "kmer4_YTSG",
+      "kmer4_GALA",
+      "kmer4_FKPL",
+      "kmer4_GMAV",
+      "kmer4_PGMA",
+      "kmer4_FELG",
+      "kmer4_ELGS",
+      "kmer4_LATY",
+      "kmer4_ATYT",
+      "kmer4_HKTG",
+      "kmer4_LGWE",
+      "kmer4_YGVK",
+      "kmer4_AYGV"
+    ]
+  ],
+  "top_20_feature_importance": [
+    {
+      "feature": "kmer4_RALV",
+      "importance": 0.6436967849731445
+    },
+    {
+      "feature": "antibiotic_class_resistance_rate",
+      "importance": 0.281023770570755
+    },
+    {
+      "feature": "species_resistance_rate",
+      "importance": 0.02384893409907818
+    },
+    {
+      "feature": "antibiotic_species_interaction",
+      "importance": 0.010070252232253551
+    },
+    {
+      "feature": "species_clean",
+      "importance": 0.008303970098495483
+    },
+    {
+      "feature": "species",
+      "importance": 0.004916144534945488
+    },
+    {
+      "feature": "site",
+      "importance": 0.0032510447781533003
+    },
+    {
+      "feature": "antibiotic_name",
+      "importance": 0.0025304537266492844
+    },
+    {
+      "feature": "sample_type",
+      "importance": 0.002523362170904875
+    },
+    {
+      "feature": "kmer4_ASWV",
+      "importance": 0.001986630028113723
+    },
+    {
+      "feature": "age",
+      "importance": 0.001970936544239521
+    },
+    {
+      "feature": "aro_antibiotic_class",
+      "importance": 0.0017933195922523737
+    },
+    {
+      "feature": "kmer4_SVLA",
+      "importance": 0.001765721244737506
+    },
+    {
+      "feature": "Infection_Freq",
+      "importance": 0.001698664971627295
+    },
+    {
+      "feature": "gender",
+      "importance": 0.0016949786804616451
+    },
+    {
+      "feature": "Diabetes",
+      "importance": 0.0016380747547373176
+    },
+    {
+      "feature": "Hypertension",
+      "importance": 0.0016124328831210732
+    },
+    {
+      "feature": "Hospital_before",
+      "importance": 0.0016038871835917234
+    },
+    {
+      "feature": "antibiotic_class",
+      "importance": 0.0015434439992532134
+    },
+    {
+      "feature": "antibiotic_class_clean",
+      "importance": 0.0012688188580796123
+    }
+  ],
+  "sample_weighting": {
+    "mendeley": 5.0,
+    "kaggle": 1.0
+  }
+}
