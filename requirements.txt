@@ -9,8 +9,6 @@ catboost
 imbalanced-learn
 joblib
 matplotlib
-torch
-torch-geometric
-rdkit
 shap
 openpyxl
+optuna
