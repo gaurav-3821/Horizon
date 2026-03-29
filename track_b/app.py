@@ -28,6 +28,28 @@ MODEL_PATH = ARTIFACTS_DIR / "stacked_model_tuned.pkl"
 SHAP_FEATURES_PATH = ARTIFACTS_DIR / "shap_features.json"
 SHAP_GLOBAL_PATH = ARTIFACTS_DIR / "shap_global.png"
 DATA_PATH = ARTIFACTS_DIR / "unified_dataset_final.csv"
+KMER_COLUMNS = [
+    "kmer4_VRIT",
+    "kmer4_ASWV",
+    "kmer4_RALV",
+    "kmer4_ALVE",
+    "kmer4_SVLA",
+    "kmer4_ANAS",
+    "kmer4_SYVA",
+    "kmer4_YTSG",
+    "kmer4_GALA",
+    "kmer4_FKPL",
+    "kmer4_GMAV",
+    "kmer4_PGMA",
+    "kmer4_FELG",
+    "kmer4_ELGS",
+    "kmer4_LATY",
+    "kmer4_ATYT",
+    "kmer4_HKTG",
+    "kmer4_LGWE",
+    "kmer4_YGVK",
+    "kmer4_AYGV",
+]
 
 BACKGROUND = "#0a0a0f"
 CARD_BG = "#111118"
@@ -363,7 +385,10 @@ Keep the output concise, clinician-facing, and structured.
 
 
 def make_input_frame(inputs: dict) -> pd.DataFrame:
-    return pd.DataFrame([inputs])
+    input_df = pd.DataFrame([inputs])
+    for column in KMER_COLUMNS:
+        input_df[column] = 0.0
+    return input_df
 
 
 def get_xgb_model_from_stack(stack_model):
