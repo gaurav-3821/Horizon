@@ -3,6 +3,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 import base64
+import html
 import json
 import time
 import urllib.error
@@ -244,6 +245,23 @@ CSS = f"""
         font-size: 1.1rem;
         font-weight: 700;
         margin-bottom: 0.85rem;
+    }}
+    .advisor-response-box {{
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 1px solid {ACCENT};
+        border-left: 4px solid {ACCENT};
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 14px;
+    }}
+    .advisor-placeholder {{
+        color: {TEXT_MUTED};
+        line-height: 1.6;
+    }}
+    .advisor-response-text {{
+        color: #f5f7fb;
+        line-height: 1.7;
+        white-space: pre-wrap;
     }}
     .pill {{
         display: inline-block;
@@ -716,11 +734,20 @@ def main():
                     st.session_state["track_b_advisor_text"] = advisor_text
             advisor_text = st.session_state.get("track_b_advisor_text")
             if advisor_text:
-                st.write(advisor_text)
+                st.markdown(
+                    f'<div class="advisor-response-box"><div class="advisor-response-text">{html.escape(advisor_text)}</div></div>',
+                    unsafe_allow_html=True,
+                )
             else:
-                st.write("Generate the Groq interpretation to populate this panel.")
+                st.markdown(
+                    '<div class="advisor-response-box"><div class="advisor-placeholder">🔬 Click \'Generate Clinical Interpretation\' to get AI-powered antibiotic stewardship recommendations.</div></div>',
+                    unsafe_allow_html=True,
+                )
         else:
-            st.write("Run a prediction first. The advisor panel uses the current patient inputs and model output.")
+            st.markdown(
+                '<div class="advisor-response-box"><div class="advisor-placeholder">🔬 Click \'Generate Clinical Interpretation\' to get AI-powered antibiotic stewardship recommendations.</div></div>',
+                unsafe_allow_html=True,
+            )
         st.markdown("</div>", unsafe_allow_html=True)
 
     with advisor_right:
