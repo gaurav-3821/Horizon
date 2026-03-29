@@ -1,0 +1,42 @@
+[
+  {
+    "feature": "species",
+    "mean_abs_shap": 0.6292099356651306
+  },
+  {
+    "feature": "antibiotic_name",
+    "mean_abs_shap": 0.3996832072734833
+  },
+  {
+    "feature": "site",
+    "mean_abs_shap": 0.317172110080719
+  },
+  {
+    "feature": "aro_antibiotic_class",
+    "mean_abs_shap": 0.17851895093917847
+  },
+  {
+    "feature": "sample_type",
+    "mean_abs_shap": 0.12070249766111374
+  },
+  {
+    "feature": "gender",
+    "mean_abs_shap": 0.07391408830881119
+  },
+  {
+    "feature": "antibiotic_species_interaction",
+    "mean_abs_shap": 0.0645638257265091
+  },
+  {
+    "feature": "Diabetes",
+    "mean_abs_shap": 0.03031446970999241
+  },
+  {
+    "feature": "age",
+    "mean_abs_shap": 0.028258083388209343
+  },
+  {
+    "feature": "kmer4_RALV",
+    "mean_abs_shap": 0.027500007301568985
+  }
+]

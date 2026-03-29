@@ -1,0 +1,42 @@
+{
+  "species_options": [
+    "unknown"
+  ],
+  "site_options": [
+    "EDE",
+    "IFE",
+    "IWO",
+    "OSU"
+  ],
+  "sample_type_options": [
+    "C",
+    "S",
+    "T"
+  ],
+  "antibiotic_options": [
+    "AUGMENTIN",
+    "CEFTAZIDIME",
+    "CIPROFLOXACIN",
+    "GENTAMICIN",
+    "IMIPENEM"
+  ],
+  "antibiotic_class_options": [
+    "aminoglycoside",
+    "beta-lactam",
+    "carbapenem",
+    "fluoroquinolone"
+  ],
+  "antibiotic_class_mode": {
+    "AUGMENTIN": "beta-lactam",
+    "CEFTAZIDIME": "beta-lactam",
+    "CIPROFLOXACIN": "fluoroquinolone",
+    "GENTAMICIN": "aminoglycoside",
+    "IMIPENEM": "carbapenem"
+  },
+  "aro_match_median": {
+    "aminoglycoside": 209.0,
+    "beta-lactam": 188.0,
+    "carbapenem": 388.0,
+    "fluoroquinolone": 197.0
+  }
+}
