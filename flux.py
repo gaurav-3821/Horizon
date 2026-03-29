@@ -29,9 +29,12 @@ def run_track(track_name: str, script_path: Path):
     st.set_page_config = _noop_set_page_config
     try:
         runpy.run_path(str(script_path), run_name="__main__")
-    except Exception:
+    except Exception as e:
         if track_name == "\U0001F9EA Track A \u2014 Drug Toxicity":
             st.error("\u26A0\uFE0F Track A requires rdkit which is unavailable in this environment.")
+        elif track_name == "\U0001F9EC Track B \u2014 Antibiotic Resistance":
+            st.error(f"Track B failed to load: {str(e)}")
+            st.exception(e)
         else:
             st.error("\u26A0\uFE0F This track failed to load. Please check dependencies.")
     finally:
