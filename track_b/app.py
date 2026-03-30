@@ -498,7 +498,7 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         color_discrete_map={"Susceptible": ACCENT, "Resistant": RESISTANT},
         opacity=0.8,
     )
-    fig.update_traces(marker=dict(size=7))
+    fig.update_traces(marker=dict(size=5))
     fig.update_layout(
         paper_bgcolor="white",
         plot_bgcolor="white",
@@ -507,7 +507,7 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         font=dict(color="black"),
         scene=dict(
             bgcolor="white",
-            camera=dict(eye=dict(x=1.05, y=1.05, z=0.9)),
+            camera=dict(eye=dict(x=0.72, y=0.72, z=0.62)),
             xaxis=dict(
                 backgroundcolor="white",
                 color="black",
