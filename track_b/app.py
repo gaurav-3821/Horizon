@@ -373,9 +373,10 @@ Keep the output concise, clinician-facing, and structured.
 """.strip()
 
     body = {
-        "model": "groq/llama-3.3-70b-versatile",
+        "model": "meta-llama/llama-3.3-70b-instruct",
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.2,
+        "provider": {"order": ["Groq"], "allow_fallbacks": False},
     }
     request = urllib.request.Request(
         "https://openrouter.ai/api/v1/chat/completions",
