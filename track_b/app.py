@@ -483,27 +483,38 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         z="pc3",
         color="label_name",
         color_discrete_map={"Susceptible": ACCENT, "Resistant": RESISTANT},
-        title="Proximity to Historical Data Clusters",
         opacity=0.8,
     )
     fig.update_traces(marker=dict(size=5))
     fig.update_layout(
         paper_bgcolor="white",
         plot_bgcolor="white",
-        margin=dict(l=0, r=0, t=46, b=0),
-        legend_title_text="Historical label",
-        legend=dict(
-            font=dict(color="black"),
-            bgcolor="white",
-            bordercolor="black",
-            borderwidth=1,
-        ),
+        margin=dict(l=0, r=0, t=0, b=0),
+        showlegend=False,
         font=dict(color="black"),
         scene=dict(
             bgcolor="white",
-            xaxis=dict(backgroundcolor="white", color="black", gridcolor="black", zerolinecolor="black"),
-            yaxis=dict(backgroundcolor="white", color="black", gridcolor="black", zerolinecolor="black"),
-            zaxis=dict(backgroundcolor="white", color="black", gridcolor="black", zerolinecolor="black"),
+            xaxis=dict(
+                backgroundcolor="white",
+                color="black",
+                tickfont=dict(color="black"),
+                gridcolor="black",
+                zerolinecolor="black",
+            ),
+            yaxis=dict(
+                backgroundcolor="white",
+                color="black",
+                tickfont=dict(color="black"),
+                gridcolor="black",
+                zerolinecolor="black",
+            ),
+            zaxis=dict(
+                backgroundcolor="white",
+                color="black",
+                tickfont=dict(color="black"),
+                gridcolor="black",
+                zerolinecolor="black",
+            ),
         ),
     )
     if star_coords is not None:
@@ -513,7 +524,7 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
                 y=[star_coords[1]],
                 z=[star_coords[2]],
                 mode="markers",
-                marker=dict(size=14, color="#ffffff", symbol="diamond", line=dict(color=ACCENT, width=3)),
+                marker=dict(symbol="diamond", size=10, color="yellow", line=dict(color="blue", width=2)),
                 name="Current patient",
             )
         )
@@ -604,12 +615,6 @@ def main():
 
     with left_col:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="small-note" style="color:#666666; font-size:0.85rem; font-style:italic; margin-bottom:16px;">'
-            'Enter patient and sample details to predict antibiotic resistance using the Mendeley-trained stacked ensemble model.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
         st.markdown('<div class="section-title">Patient Input Command Center</div>', unsafe_allow_html=True)
         st.markdown('<div class="section-step">1. Patient Details</div>', unsafe_allow_html=True)
         species = st.selectbox("Species", species_options, index=0 if species_options else None)
@@ -698,12 +703,6 @@ def main():
 
     with center_col:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="small-note" style="color:#666666; font-size:0.85rem; font-style:italic; margin-bottom:16px;">'
-            '3D PCA visualization of historical AMR data. Your patient will appear as a diamond marker among the resistance clusters.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
         figure = make_prediction_plot(projection_df, current_star)
         st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
         result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
@@ -741,12 +740,6 @@ def main():
 
     with right_col:
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="small-note" style="color:#666666; font-size:0.85rem; font-style:italic; margin-bottom:16px;">'
-            'SHAP-based global feature importance from the XGBoost base model. Higher values indicate stronger influence on resistance prediction.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
         st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
         st.markdown("</div>", unsafe_allow_html=True)
