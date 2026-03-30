@@ -86,6 +86,27 @@ def inject_css():
                 line-height: 1.5;
                 margin-bottom: 1rem;
             }}
+            .status-card {{
+                background: #ffffff;
+                border: 2px solid {BORDER};
+                box-shadow: 4px 4px 0px {BORDER};
+                padding: 14px 16px;
+                margin-bottom: 1rem;
+            }}
+            .status-title {{
+                font-size: 0.9rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: {TEXT};
+                margin-bottom: 0.5rem;
+            }}
+            .status-line {{
+                color: {TEXT};
+                font-size: 0.88rem;
+                line-height: 1.5;
+                margin-bottom: 0.3rem;
+            }}
             .track-pill {{
                 display: inline-block;
                 margin-bottom: 0.75rem;
@@ -144,6 +165,17 @@ def run_track(track_name: str, script_path: Path):
 
 
 def render_drawer():
+    st.markdown(
+        """
+        <div class="status-card">
+            <div class="status-title">Prototype Status</div>
+            <div class="status-line">Track B is the flagship live demo.</div>
+            <div class="status-line">Track A is rebuilding on tabular-only models.</div>
+            <div class="status-line">Track C covers epidemic forecasting.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.markdown('<div class="drawer-card">', unsafe_allow_html=True)
     st.markdown('<div class="drawer-heading">Tracks</div>', unsafe_allow_html=True)
     st.markdown(
