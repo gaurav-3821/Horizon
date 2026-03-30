@@ -31,7 +31,20 @@ def run_track(track_name: str, script_path: Path):
         runpy.run_path(str(script_path), run_name="__main__")
     except Exception as e:
         if track_name == "\U0001F9EA Track A \u2014 Drug Toxicity":
-            st.error("\u26A0\uFE0F Track A requires rdkit which is unavailable in this environment.")
+            st.markdown(
+                """
+                <div style="background:#fff3cd;border:2px solid #000;padding:18px;box-shadow:4px 4px 0px #000;">
+                    <div style="font-size:1.1rem;font-weight:800;color:#0a0a0f;margin-bottom:8px;">
+                        🧪 Track A — Drug Toxicity Prediction
+                    </div>
+                    <div style="color:#0a0a0f;line-height:1.6;">
+                        This track uses a GNN + tabular hybrid model requiring specialized dependencies
+                        (rdkit, torch-geometric) not available in the cloud environment. Available in local deployment.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
         elif track_name == "\U0001F9EC Track B \u2014 Antibiotic Resistance":
             st.error(f"Track B failed to load: {str(e)}")
             st.exception(e)
