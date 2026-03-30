@@ -3,11 +3,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 import base64
-import html
 import json
 import time
-import urllib.error
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -59,7 +56,7 @@ INPUT_BG = "#ffffff"
 ACCENT = "#0066cc"
 RESISTANT = "#cc0000"
 SUSCEPTIBLE = "#006600"
-TEXT_MUTED = "#5f6368"
+TEXT_MUTED = "#0a0a0f"
 
 
 st.set_page_config(page_title="Horizon | Track B", layout="wide", page_icon="\U0001F9EC")
@@ -111,7 +108,7 @@ CSS = f"""
     .metric-icon {{
         font-size: 1.25rem;
         margin-bottom: 10px;
-        color: {ACCENT};
+        color: #0a0a0f;
     }}
     .metric-label {{
         color: {TEXT_MUTED};
@@ -125,16 +122,14 @@ CSS = f"""
         line-height: 1.1;
     }}
     .metric-sub {{
-        color: {ACCENT};
+        color: #0a0a0f;
         font-size: 0.82rem;
         margin-top: 6px;
     }}
     .hero-title {{
         font-size: 2.3rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #0a0a0f 0%, {ACCENT} 70%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #0a0a0f;
         margin-bottom: 0.2rem;
     }}
     .hero-subtitle {{
@@ -166,7 +161,7 @@ CSS = f"""
     }}
     .section-step {{
         font-size: 0.82rem;
-        color: {ACCENT};
+        color: #0a0a0f;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         margin-bottom: 0.35rem;
@@ -219,7 +214,7 @@ CSS = f"""
         margin-bottom: 6px;
     }}
     .local-bar-name {{
-        color: #ffffff;
+        color: #0a0a0f;
         font-weight: 600;
     }}
     .local-bar-value {{
@@ -238,42 +233,6 @@ CSS = f"""
         background: linear-gradient(90deg, {ACCENT}, #7a5cff);
         box-shadow: 3px 3px 0px #7a5cff;
     }}
-    .advisor-box {{
-        background: {CARD_BG};
-        border: 2px solid {ACCENT};
-        padding: 20px;
-        min-height: 320px;
-        box-shadow: 4px 4px 0px {ACCENT};
-    }}
-    .advisor-card {{
-        background: {CARD_BG};
-        border: 2px solid {ACCENT};
-        padding: 18px;
-        height: 100%;
-        box-shadow: 4px 4px 0px {ACCENT};
-    }}
-    .advisor-title {{
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 0.85rem;
-    }}
-    .advisor-response-box {{
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        border: 1px solid {ACCENT};
-        border-left: 4px solid {ACCENT};
-        border-radius: 12px;
-        padding: 24px;
-        margin-top: 14px;
-    }}
-    .advisor-placeholder {{
-        color: {TEXT_MUTED};
-        line-height: 1.6;
-    }}
-    .advisor-response-text {{
-        color: #0a0a0f;
-        line-height: 1.7;
-        white-space: pre-wrap;
-    }}
     .pill {{
         display: inline-block;
         border: 2px solid {ACCENT};
@@ -281,7 +240,7 @@ CSS = f"""
         font-size: 0.75rem;
         font-weight: 700;
         background: #eef5ff;
-        color: {ACCENT};
+        color: #0a0a0f;
         margin-right: 8px;
         margin-bottom: 8px;
         box-shadow: 3px 3px 0px {ACCENT};
@@ -293,7 +252,7 @@ CSS = f"""
     }}
     .stButton > button, .stDownloadButton > button {{
         background: {ACCENT};
-        color: #ffffff;
+        color: #0a0a0f;
         border: 2px solid #000 !important;
         font-weight: 800;
         box-shadow: 3px 3px 0px #000;
@@ -301,7 +260,7 @@ CSS = f"""
     }}
     .stButton > button:hover, .stDownloadButton > button:hover {{
         background: #0052a3;
-        color: #ffffff;
+        color: #0a0a0f;
         box-shadow: 1px 1px 0px #000;
         transform: translate(2px, 2px);
     }}
@@ -311,6 +270,14 @@ CSS = f"""
         background: {INPUT_BG} !important;
         border: 2px solid {ACCENT} !important;
         color: #0a0a0f !important;
+    }}
+    input[type="number"] {{
+        color: #0a0a0f !important;
+        background-color: #ffffff !important;
+    }}
+    input[type="text"] {{
+        color: #0a0a0f !important;
+        background-color: #ffffff !important;
     }}
     label, .stSelectbox label, .stNumberInput label {{
         color: {TEXT_MUTED} !important;
@@ -361,59 +328,6 @@ def build_pca_projection():
         }
     )
     return pca, projection
-
-
-def call_groq_advisor(payload: dict) -> str:
-    api_key = st.secrets.get("OPENROUTER_API_KEY")
-    if not api_key:
-        return "Missing `OPENROUTER_API_KEY` in Streamlit secrets. Add the key before using the clinical advisor."
-
-    prompt = f"""
-You are a clinical antimicrobial stewardship advisor. Interpret this research model output clearly and concisely.
-
-Case ID: {payload['case_id']}
-Patient inputs: {json.dumps(payload['inputs'], indent=2)}
-Prediction summary: {json.dumps(payload['model_results'], indent=2)}
-Top local SHAP features: {json.dumps(payload['top_local_features'], indent=2)}
-
-Provide:
-1. Clinical interpretation
-2. Key drivers
-3. Stewardship recommendations (2 bullets)
-4. Uncertainty note
-
-Keep the output concise, clinician-facing, and structured.
-""".strip()
-
-    body = {
-        "model": "meta-llama/llama-3.3-70b-instruct",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-        "provider": {"order": ["Groq"], "allow_fallbacks": False},
-    }
-    request = urllib.request.Request(
-        "https://openrouter.ai/api/v1/chat/completions",
-        data=json.dumps(body).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": "https://github.com/gaurav-3821/Horizon",
-            "X-Title": "Horizon AI Clinical Advisor",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        return payload["choices"][0]["message"]["content"].strip()
-    except urllib.error.HTTPError as exc:
-        try:
-            detail = exc.read().decode("utf-8")
-        except Exception:
-            detail = str(exc)
-        return f"OpenRouter API error: {detail}"
-    except Exception as exc:
-        return f"OpenRouter API call failed: {exc}"
 
 
 def make_input_frame(inputs: dict) -> pd.DataFrame:
@@ -518,19 +432,6 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
             )
         )
     return fig
-
-
-def extract_stewardship_recs(prediction_label: str, resistant_probability: float, top_features: list[dict]) -> list[str]:
-    drivers = ", ".join(item["feature"] for item in top_features[:2]) if top_features else "model drivers"
-    if prediction_label == "Resistant":
-        return [
-            f"Escalate stewardship review before empiric use; strongest model drivers: {drivers}.",
-            f"Resistant probability is {resistant_probability:.1%}; correlate with culture and susceptibility panel before action.",
-        ]
-    return [
-        f"Prediction favors susceptibility; confirm with culture and local antibiogram before de-escalation.",
-        f"Use {drivers} as context only; avoid single-model decisions without microbiology validation.",
-    ]
 
 
 def render_metric_card(icon: str, label: str, value: str, subtext: str = ""):
@@ -689,7 +590,6 @@ def main():
             "pca_coords": [float(value) for value in current_star],
         }
         st.session_state["track_b_prediction_payload"] = report_dict
-        st.session_state.pop("track_b_advisor_text", None)
         prediction_payload = report_dict
         st.rerun()
 
@@ -713,7 +613,7 @@ def main():
             state_class = "resistant" if prediction_label == "Resistant" else "susceptible"
             st.markdown(f'<div class="prediction-state {state_class}">', unsafe_allow_html=True)
             st.markdown(
-                f'<div class="prediction-text" style="color:{result_color};">{prediction_label.upper()}</div>',
+                f'<div class="prediction-text" style="color:#0a0a0f;">{prediction_label.upper()}</div>',
                 unsafe_allow_html=True,
             )
             st.markdown(
@@ -728,6 +628,9 @@ def main():
                 """,
                 unsafe_allow_html=True,
             )
+            st.markdown('<div style="height:18px;"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
+            render_local_shap_bars(local_top_features[:5])
             st.markdown("</div>", unsafe_allow_html=True)
         else:
             st.markdown(
@@ -746,74 +649,6 @@ def main():
                 unsafe_allow_html=True,
             )
         st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
-        if prediction_payload:
-            render_local_shap_bars(local_top_features[:5])
-        else:
-            st.info("Run a prediction to compute local SHAP contributions.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="advisor-box">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">AI Clinical Advisor Box</div>', unsafe_allow_html=True)
-    st.markdown('<div class="advisor-card">', unsafe_allow_html=True)
-    if prediction_payload and st.button("Generate Clinical Interpretation", key="groq_advisor_btn"):
-        with st.spinner("Generating clinical interpretation..."):
-            advisor_text = call_groq_advisor(prediction_payload)
-            st.session_state["track_b_advisor_text"] = advisor_text
-
-    advisor_text = st.session_state.get("track_b_advisor_text", "")
-    if advisor_text:
-        interpretation_block = html.escape(advisor_text)
-    else:
-        interpretation_block = "Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations."
-
-    key_drivers_html = ""
-    if prediction_payload and local_top_features:
-        key_drivers_html = "".join(
-            [
-                f"<li><strong>{html.escape(item['feature'])}</strong>: {item['value']:+.4f}</li>"
-                for item in local_top_features[:3]
-            ]
-        )
-    else:
-        key_drivers_html = "<li>Run a prediction to populate key drivers.</li>"
-
-    stewardship_recs = extract_stewardship_recs(prediction_label, resistant_probability, local_top_features) if prediction_payload else [
-        "Prediction is required before stewardship guidance can be generated.",
-        "Use microbiology validation before any treatment decision.",
-    ]
-    stewardship_html = "".join([f"<li>{html.escape(item)}</li>" for item in stewardship_recs[:2]])
-
-    advisor_html = f"""
-<div style="background: linear-gradient(135deg, #e8f4f8, #f0f8ff);
-             border: 2px solid #0066cc;
-             box-shadow: 4px 4px 0px #0066cc;
-             padding: 24px;
-             margin-top: 16px;">
-    <div style="font-weight: 800; margin-bottom: 10px; color: #0a0a0f;">&#128300; AI Clinical Interpretation</div>
-    <div style="color: {'#666666' if not advisor_text else '#0a0a0f'}; line-height: 1.7; white-space: pre-wrap; margin-bottom: 20px;">{interpretation_block}</div>
-    <div style="font-weight: 800; margin-bottom: 10px; color: #0a0a0f;">&#128202; Key Drivers</div>
-    <ul style="margin-top: 0; margin-bottom: 20px; color: #0a0a0f;">{key_drivers_html}</ul>
-    <div style="font-weight: 800; margin-bottom: 10px; color: #0a0a0f;">&#9877; Stewardship Recommendations</div>
-    <ul style="margin-top: 0; margin-bottom: 0; color: #0a0a0f;">{stewardship_html}</ul>
-</div>
-"""
-    st.markdown(advisor_html, unsafe_allow_html=True)
-
-    if prediction_payload:
-        st.markdown('<div style="height:14px;"></div>', unsafe_allow_html=True)
-        st.download_button(
-            "Download Structured Report (JSON)",
-            data=json.dumps(prediction_payload, indent=2),
-            file_name=f"{case_id or 'track_b_report'}.json",
-            mime="application/json",
-            use_container_width=True,
-        )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
