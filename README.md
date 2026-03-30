@@ -1,34 +1,99 @@
 # Horizon
 
-Horizon is a Streamlit Cloud-ready health intelligence dashboard that bundles three independent machine learning tracks into one deployable repository. The repo is organized by track so each model, dataset, artifact, and app can be updated manually without digging through mixed notebooks or duplicate entrypoints.
+Horizon is a multi-track Streamlit application built for the CodeCure AI Hackathon. It combines three health AI workflows in one repository:
 
-## Overview
+- Track B: antibiotic resistance prediction
+- Track A: drug toxicity prediction
+- Track C: epidemic spread forecasting
 
-The repository is split into three self-contained application areas:
+The repository is structured so each track can be edited, trained, and deployed independently, while `flux.py` provides a single entrypoint for the full app.
 
-- `track_a/`: toxicity prediction
-- `track_b/`: antibiotic resistance prediction
-- `track_c/`: epidemic spread forecasting
+## Current Status
 
-The single supported top-level app entrypoint is `flux.py`. That file routes into each track-specific Streamlit app through native `st.Page()` and `st.navigation()`.
+The primary polished experience in this repo is **Track B**.
 
-## Streamlit Cloud Deployment
+Track B currently includes:
 
-Use these settings when deploying on Streamlit Cloud:
+- unified AMR dataset pipeline across multiple data sources
+- tuned stacked ensemble artifacts for Mendeley-focused inference
+- local SHAP explainability
+- Streamlit clinical dashboard with PCA cluster view and prediction UI
 
-- Repository: `gaurav-3821/Horizon`
-- Branch: `main`
-- Main file path: `flux.py`
-- Python runtime: `python-3.12` from `runtime.txt`
+## Repository Layout
 
-The deployment is designed around:
+```text
+HorizonRepo/
+|-- flux.py
+|-- requirements.txt
+|-- runtime.txt
+|-- Dockerfile
+|-- README.md
+|-- PROJECT_STRUCTURE.md
+|-- docs/
+|-- track_a/
+|-- track_b/
+`-- track_c/
+```
 
-- one root `requirements.txt`
-- one root app entrypoint
-- track-local `data/` and `artifacts/` directories
-- `pathlib`-based path resolution from each app's own directory
+### Root files
 
-## Local Run
+- [flux.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/flux.py): unified Streamlit launcher
+- [requirements.txt](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/requirements.txt): deployment dependencies
+- [runtime.txt](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/runtime.txt): Python runtime pin for Streamlit Cloud
+- [Dockerfile](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/Dockerfile): optional container entrypoint
+
+### Track A
+
+- [app.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_a/app.py): Streamlit UI
+- [track_a_pipeline.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_a/track_a_pipeline.py): training and evaluation pipeline
+
+### Track B
+
+- [app.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/app.py): Streamlit clinical dashboard
+- [track_b_data_loader.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/track_b_data_loader.py): dataset integration and cleaning
+- [track_b_model.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/track_b_model.py): feature engineering, diagnostics, and training
+- `track_b/data/`: raw Track B datasets and CARD/ARO assets
+- `track_b/artifacts/`: tuned models, SHAP outputs, metrics, diagnostics, and unified dataset
+
+### Track C
+
+- [app.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_c/app.py): Streamlit UI
+- [track_c_model.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_c/track_c_model.py): forecasting and classification pipeline
+- [track_c_data_loader.py](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_c/track_c_data_loader.py): epidemic data merge and feature prep
+
+## Track B Summary
+
+Track B is the most production-ready path in this repo.
+
+### Data sources integrated
+
+- Mendeley AMR dataset
+- Kaggle multi-resistance dataset
+- `aro.tsv`
+- `card.json`
+- protein FASTA homolog model data
+
+### Training outputs available
+
+Key Track B artifacts already present in:
+
+- [track_b/artifacts/unified_dataset_final.csv](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/artifacts/unified_dataset_final.csv)
+- [track_b/artifacts/stacked_model_tuned.pkl](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/artifacts/stacked_model_tuned.pkl)
+- [track_b/artifacts/shap_features.json](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/artifacts/shap_features.json)
+- [track_b/artifacts/shap_global.png](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/artifacts/shap_global.png)
+- [track_b/artifacts/mendeley_only_metrics.json](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/artifacts/mendeley_only_metrics.json)
+- [track_b/artifacts/best_params.json](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/track_b/artifacts/best_params.json)
+
+### Modeling notes
+
+Track B work in this repo includes:
+
+- leakage cleanup for identifier-like columns
+- Mendeley-only tuned stack for higher-quality clinical inference
+- SHAP-based local and global explainability
+- PCA projection view for positioning current input against historical cases
+
+## Installation
 
 Install dependencies:
 
@@ -36,83 +101,55 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run the unified dashboard:
+## Running The App
+
+Run the unified app:
 
 ```bash
 streamlit run flux.py
 ```
 
-Run a single track directly when you only need one app:
+Run Track B directly:
+
+```bash
+streamlit run track_b/app.py
+```
+
+Run Track A directly:
 
 ```bash
 streamlit run track_a/app.py
-streamlit run track_b/app.py
+```
+
+Run Track C directly:
+
+```bash
 streamlit run track_c/app.py
 ```
 
-## Repository Layout
+## Streamlit Cloud
 
-### Root
+Recommended deployment settings:
 
-- `flux.py`: unified Streamlit navigation hub
-- `requirements.txt`: repository-wide Python dependencies
-- `runtime.txt`: Streamlit Cloud runtime pin
-- `Dockerfile`: optional container entrypoint for the same root app
-- `PROJECT_STRUCTURE.md`: quick file map
-- `README.md`: deployment and structure guide
+- Repository: `gaurav-3821/Horizon`
+- Branch: `main`
+- Main file path: `flux.py`
+- Python version: from [runtime.txt](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/runtime.txt)
 
-### Track A
+## Design Principles In This Repo
 
-Track A contains the molecular toxicity system.
+- track-local code stays inside its own folder
+- models and generated outputs stay in the matching `artifacts/` folder
+- raw data stays in the matching `data/` folder
+- root app orchestration stays in `flux.py`
+- deployment dependencies are controlled from the root `requirements.txt`
 
-- `track_a/app.py`: Streamlit inference UI
-- `track_a/track_a_pipeline.py`: preprocessing, training, distillation, and evaluation
-- `track_a/data/`: Tox21 and ZINC source data
-- `track_a/artifacts/`: trained models, SHAP outputs, and processed data
+## Notes
 
-### Track B
+- Track A may fail in environments where `rdkit` is not available.
+- Track B is the current priority path and default user-facing workflow.
+- Large model/data artifacts are included under Track B and may require Git LFS-aware workflows.
 
-Track B contains the antibiotic resistance system.
+## License
 
-- `track_b/app.py`: Streamlit inference UI
-- `track_b/track_b_model.py`: model training and validation
-- `track_b/track_b_data_loader.py`: dataset cleaning and unification
-- `track_b/data/`: Track B source datasets
-- `track_b/artifacts/`: saved models, encoders, scalers, and CV summaries
-
-### Track C
-
-Track C contains the epidemic forecasting system.
-
-- `track_c/app.py`: Streamlit analytics and prediction UI
-- `track_c/track_c_model.py`: forecasting and classification pipeline
-- `track_c/track_c_data_loader.py`: JHU and OWID merge logic plus feature engineering
-- `track_c/data/`: epidemic time-series files
-- `track_c/artifacts/`: saved forecaster, classifier, and evaluation results
-
-### Docs
-
-- `docs/`: handoff reports and presentation assets
-
-## Design Rules In This Repo
-
-- one authoritative Streamlit app entrypoint: `flux.py`
-- one authoritative dependency file: `requirements.txt`
-- track-local assets stay with their matching app
-- no duplicate master-app files
-- deployment settings should match the root repo layout, not old nested layouts
-
-## Notes For Manual Editing
-
-- If a saved artifact changes shape, update the app in the same track folder.
-- Keep new models, pickles, and plots in that track's `artifacts/` folder.
-- Keep raw or source datasets inside the matching track's `data/` folder.
-- If deployment behavior changes, update `flux.py`, `requirements.txt`, and `runtime.txt` together.
-
-## Current Deployment Target
-
-This repository is prepared primarily for Streamlit Cloud. Docker is still available for local container use, but the intended deployment path is:
-
-```bash
-streamlit run flux.py
-```
+This repository includes a [LICENSE](C:/Users/Gaurav/Documents/CodeCure/Roses%20G1/HorizonRepo/LICENSE) file at the root.
