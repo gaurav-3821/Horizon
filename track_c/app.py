@@ -112,6 +112,7 @@ CSS = f"""
         padding: 20px;
         box-shadow: 4px 4px 0px {ACCENT};
         height: 100%;
+        margin-top: 0.4rem;
     }}
     .section-title {{
         font-size: 1.02rem;
@@ -147,6 +148,56 @@ CSS = f"""
     label, .stSelectbox label {{
         color: {TEXT} !important;
         font-weight: 600 !important;
+    }}
+    [data-testid="stMetric"] {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }}
+    [data-testid="stMetricLabel"],
+    [data-testid="stMetricLabel"] * {{
+        color: {TEXT} !important;
+        opacity: 1 !important;
+    }}
+    [data-testid="stMetricValue"],
+    [data-testid="stMetricValue"] * {{
+        color: {TEXT} !important;
+        opacity: 1 !important;
+    }}
+    [data-testid="stMetricDelta"],
+    [data-testid="stMetricDelta"] * {{
+        color: {TEXT} !important;
+        opacity: 1 !important;
+    }}
+    [data-baseweb="tab-list"] {{
+        gap: 8px;
+        margin-top: 0.4rem;
+        margin-bottom: 0.8rem;
+    }}
+    button[role="tab"] {{
+        background: #ffffff !important;
+        color: {TEXT} !important;
+        border: 2px solid {BORDER} !important;
+        box-shadow: 4px 4px 0px {BORDER};
+        font-weight: 700 !important;
+        padding: 0.45rem 0.9rem !important;
+    }}
+    button[role="tab"][aria-selected="true"] {{
+        background: #e8f1ff !important;
+        color: {TEXT} !important;
+        border: 2px solid {ACCENT} !important;
+        box-shadow: 4px 4px 0px {ACCENT};
+    }}
+    button[role="tab"] p {{
+        color: {TEXT} !important;
+    }}
+    [data-testid="stTabPanel"] {{
+        background: {CARD_BG};
+        border: 2px solid {ACCENT};
+        box-shadow: 4px 4px 0px {ACCENT};
+        padding: 20px;
+        margin-top: 0.35rem;
     }}
 </style>
 """
@@ -242,7 +293,6 @@ def main():
     tab1, tab2, tab3 = st.tabs(["Case Forecast", "Risk Map", "Model Performance"])
 
     with tab1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Country-level Case Forecast</div>', unsafe_allow_html=True)
         if df is not None and not df.empty:
             countries = sorted(df["Country/Region"].dropna().unique().tolist())
@@ -283,10 +333,8 @@ def main():
                 col.metric(label, f"{pct}% of days")
         else:
             st.info("No Track C data available.")
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with tab2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Global Risk Snapshot</div>', unsafe_allow_html=True)
         if df is not None and not df.empty:
             latest = df.groupby("Country/Region").last().reset_index()
@@ -307,10 +355,8 @@ def main():
             st.pyplot(fig2)
         else:
             st.info("No Track C data available.")
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with tab3:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Model Performance</div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2, gap="large")
         with c1:
@@ -331,7 +377,6 @@ def main():
                 f'<div class="small-note">Train rows: {classifier_metrics.get("n_train", "N/A")} | Test rows: {classifier_metrics.get("n_test", "N/A")}</div>',
                 unsafe_allow_html=True,
             )
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
