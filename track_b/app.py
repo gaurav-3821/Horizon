@@ -700,6 +700,8 @@ def main():
             current_star = np.asarray(prediction_payload["pca_coords"], dtype=float)
 
     with center_col:
+        st.markdown('<div style="margin-top:20px;"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Proximity to Historical Data Clusters</div>', unsafe_allow_html=True)
         figure = make_prediction_plot(projection_df, current_star)
         st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
         result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
