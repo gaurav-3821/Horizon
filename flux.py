@@ -2,22 +2,82 @@
 from __future__ import annotations
 
 import runpy
+import sys
 from pathlib import Path
 
 import streamlit as st
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+BACKGROUND = "#f5f5f0"
+ACCENT = "#0066cc"
+BORDER = "#000000"
+TEXT = "#0a0a0f"
+
 TRACKS = {
-    "\U0001F9EC Track B \u2014 Antibiotic Resistance": PROJECT_ROOT / "track_b" / "app.py",
-    "\U0001F9EA Track A \u2014 Drug Toxicity": PROJECT_ROOT / "track_a" / "app.py",
-    "\U0001F9A0 Track C \u2014 Epidemic Spread": PROJECT_ROOT / "track_c" / "app.py",
+    "🧬 Track B — Antibiotic Resistance": PROJECT_ROOT / "track_b" / "app.py",
+    "🧪 Track A — Drug Toxicity": PROJECT_ROOT / "track_a" / "app.py",
+    "🦠 Track C — Epidemic Spread": PROJECT_ROOT / "track_c" / "app.py",
 }
-DEFAULT_TRACK = "\U0001F9EC Track B \u2014 Antibiotic Resistance"
+DEFAULT_TRACK = "🧬 Track B — Antibiotic Resistance"
 
 
 def _noop_set_page_config(*args, **kwargs):
     return None
+
+
+def inject_css():
+    st.markdown(
+        f"""
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+            html, body, [class*="css"] {{
+                font-family: 'Inter', system-ui, sans-serif;
+            }}
+            .stApp {{
+                background: {BACKGROUND};
+                color: {TEXT};
+            }}
+            #MainMenu {{visibility: hidden;}}
+            footer {{visibility: hidden;}}
+            header {{visibility: hidden;}}
+            [data-testid="stHeader"] {{display: none;}}
+            [data-testid="stSidebar"] {{
+                background: #eeeeea;
+                border-right: 2px solid {BORDER};
+            }}
+            [data-testid="stSidebar"] * {{
+                color: {TEXT};
+            }}
+            .block-container {{
+                max-width: 1800px;
+                padding-top: 1.25rem;
+                padding-bottom: 1.25rem;
+            }}
+            div[role="radiogroup"] {{
+                gap: 0.45rem;
+            }}
+            div[role="radiogroup"] label {{
+                background: #ffffff !important;
+                color: {TEXT} !important;
+                border: 2px solid {BORDER} !important;
+                border-radius: 0px !important;
+                box-shadow: 4px 4px 0px {BORDER};
+                padding: 0.4rem 0.55rem !important;
+                margin-bottom: 0.25rem;
+            }}
+            div[role="radiogroup"] label:has(input:checked) {{
+                background: {ACCENT} !important;
+                box-shadow: 4px 4px 0px {ACCENT};
+            }}
+            div[role="radiogroup"] label span {{
+                color: inherit !important;
+                font-weight: 700 !important;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def run_track(track_name: str, script_path: Path):
@@ -26,51 +86,48 @@ def run_track(track_name: str, script_path: Path):
         return
 
     original_set_page_config = st.set_page_config
+    original_sys_path = list(sys.path)
     st.set_page_config = _noop_set_page_config
+    sys.path.insert(0, str(script_path.parent))
     try:
         runpy.run_path(str(script_path), run_name="__main__")
-    except Exception as e:
-        if track_name == "\U0001F9EA Track A \u2014 Drug Toxicity":
-            st.markdown(
-                """
-                <div style="background:#fff3cd;border:2px solid #000;padding:18px;box-shadow:4px 4px 0px #000;">
-                    <div style="font-size:1.1rem;font-weight:800;color:#0a0a0f;margin-bottom:8px;">
-                        🧪 Track A — Drug Toxicity Prediction
-                    </div>
-                    <div style="color:#0a0a0f;line-height:1.6;">
-                        This track uses a GNN + tabular hybrid model requiring specialized dependencies
-                        (rdkit, torch-geometric) not available in the cloud environment. Available in local deployment.
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        elif track_name == "\U0001F9EC Track B \u2014 Antibiotic Resistance":
-            st.error(f"Track B failed to load: {str(e)}")
-            st.exception(e)
+    except FileNotFoundError:
+        if track_name == "🧪 Track A — Drug Toxicity":
+            st.warning("Track A models are currently compiling. Please check back later.")
         else:
-            st.error("\u26A0\uFE0F This track failed to load. Please check dependencies.")
+            st.error(f"{track_name} is missing required files.")
+    except Exception as exc:
+        if track_name == "🧪 Track A — Drug Toxicity":
+            st.warning("Track A models are currently compiling. Please check back later.")
+        else:
+            st.error(f"{track_name} failed to load: {exc}")
+            st.exception(exc)
     finally:
+        sys.path[:] = original_sys_path
         st.set_page_config = original_set_page_config
 
 
 def main():
-    st.set_page_config(page_title="Horizon", layout="wide", page_icon="\U0001FA7A")
+    st.set_page_config(page_title="Horizon", layout="wide")
+    inject_css()
 
     if "selected_track" not in st.session_state:
         st.session_state["selected_track"] = DEFAULT_TRACK
 
-    st.sidebar.title("Horizon")
-    st.sidebar.caption("CodeCure AI Hackathon")
+    st.sidebar.markdown(
+        """
+        <div style="font-size:1.55rem;font-weight:800;color:#0a0a0f;margin-bottom:0.1rem;">Horizon</div>
+        <div style="color:#0a0a0f;font-size:0.92rem;margin-bottom:1rem;">CodeCure AI Hackathon</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     selected_track = st.sidebar.radio(
         "Tracks",
         options=list(TRACKS.keys()),
-        index=list(TRACKS.keys()).index(st.session_state["selected_track"]),
         key="selected_track",
+        label_visibility="collapsed",
     )
-
-    if selected_track != st.session_state["selected_track"]:
-        st.session_state["selected_track"] = selected_track
 
     run_track(selected_track, TRACKS[selected_track])
 
