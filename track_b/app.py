@@ -1,8 +1,7 @@
-import sys
+﻿import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
-import base64
 import json
 import time
 from datetime import datetime
@@ -178,20 +177,6 @@ CSS = f"""
         color: {TEXT_MUTED};
         margin-bottom: 0.85rem;
     }}
-    .prediction-state {{
-        margin-top: 18px;
-        padding: 18px;
-        border: 3px solid #ffffff;
-        box-shadow: 6px 6px 0px #ffffff;
-    }}
-    .prediction-state.resistant {{
-        border: 3px solid {RESISTANT};
-        box-shadow: 6px 6px 0px {RESISTANT};
-    }}
-    .prediction-state.susceptible {{
-        border: 3px solid {SUSCEPTIBLE};
-        box-shadow: 6px 6px 0px {SUSCEPTIBLE};
-    }}
     .progress-shell {{
         width: 100%;
         height: 14px;
@@ -250,6 +235,38 @@ CSS = f"""
         font-size: 0.87rem;
         line-height: 1.55;
     }}
+    .advisor-box {{
+        background: linear-gradient(135deg, #e8f4f8, #f0f8ff);
+        border: 2px solid {ACCENT};
+        box-shadow: 4px 4px 0px {ACCENT};
+        padding: 18px;
+        margin-top: 16px;
+    }}
+    .advisor-title {{
+        color: #0a0a0f;
+        font-size: 1rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 12px;
+    }}
+    .advisor-copy {{
+        color: #0a0a0f;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 14px;
+    }}
+    .advisor-copy.placeholder {{
+        color: #666666;
+    }}
+    .advisor-list {{
+        color: #0a0a0f;
+        margin: 0 0 14px 18px;
+        padding: 0;
+    }}
+    .advisor-list li {{
+        margin-bottom: 6px;
+    }}
     .stButton > button, .stDownloadButton > button {{
         background: {ACCENT};
         color: #0a0a0f;
@@ -300,15 +317,12 @@ def load_assets():
     with open(SHAP_FEATURES_PATH, "r", encoding="utf-8") as handle:
         shap_features = json.load(handle)
     data = pd.read_csv(DATA_PATH)
-    shap_global_b64 = None
-    if SHAP_GLOBAL_PATH.exists():
-        shap_global_b64 = base64.b64encode(SHAP_GLOBAL_PATH.read_bytes()).decode("utf-8")
-    return model_bundle, shap_features, data, shap_global_b64
+    return model_bundle, shap_features, data
 
 
 @st.cache_resource
 def build_pca_projection():
-    model_bundle, _, data, _ = load_assets()
+    model_bundle, _, data = load_assets()
     mendeley = data[data["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
     if mendeley.empty:
         raise ValueError("No Mendeley rows found for PCA projection.")
@@ -395,6 +409,72 @@ def render_local_shap_bars(top_features: list[dict]):
     st.markdown(html, unsafe_allow_html=True)
 
 
+def build_clinical_interpretation(
+    prediction_label: str,
+    confidence_pct: float | None,
+    resistant_probability: float | None,
+    top_features: list[dict],
+):
+    drivers = top_features[:3]
+    if prediction_label == "Resistant":
+        interpretation = (
+            f"The model estimates a resistant phenotype with {confidence_pct:.1f}% confidence. "
+            f"Estimated resistant probability is {resistant_probability:.1%}, so empiric coverage should be reviewed carefully."
+        )
+        recommendations = [
+            "Avoid relying on the current antibiotic in isolation until susceptibility data is confirmed.",
+            "Escalate stewardship review and reconcile the predicted risk with organism identity and source site.",
+        ]
+    else:
+        interpretation = (
+            f"The model estimates a susceptible phenotype with {confidence_pct:.1f}% confidence. "
+            f"Estimated resistant probability is {resistant_probability:.1%}, which supports lower resistance concern in this profile."
+        )
+        recommendations = [
+            "Use the prediction as supportive evidence only after correlating with culture and susceptibility testing.",
+            "Reassess once laboratory confirmation and patient response data become available.",
+        ]
+    return interpretation, drivers, recommendations
+
+
+def render_advisor_box(
+    prediction_label: str | None,
+    confidence_pct: float | None,
+    resistant_probability: float | None,
+    local_top_features: list[dict],
+):
+    generated = st.session_state.get("track_b_advisor_generated", False)
+    placeholder_html = """
+    <div class="advisor-box">
+        <div class="advisor-title">AI Clinical Interpretation</div>
+        <div class="advisor-copy placeholder">Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.</div>
+    </div>
+    """
+    if not prediction_label or confidence_pct is None or resistant_probability is None:
+        st.markdown(placeholder_html, unsafe_allow_html=True)
+        return
+    if not generated:
+        st.markdown(placeholder_html, unsafe_allow_html=True)
+        return
+
+    interpretation, drivers, recommendations = build_clinical_interpretation(
+        prediction_label, confidence_pct, resistant_probability, local_top_features
+    )
+    driver_items = "".join([f"<li>{item['feature']}: {item['value']:+.4f}</li>" for item in drivers])
+    rec_items = "".join([f"<li>{item}</li>" for item in recommendations])
+    advisor_html = f"""
+    <div class="advisor-box">
+        <div class="advisor-title">AI Clinical Interpretation</div>
+        <div class="advisor-copy">{interpretation}</div>
+        <div class="advisor-title">Key Drivers</div>
+        <ul class="advisor-list">{driver_items}</ul>
+        <div class="advisor-title">Stewardship Recommendations</div>
+        <ul class="advisor-list">{rec_items}</ul>
+    </div>
+    """
+    st.markdown(advisor_html, unsafe_allow_html=True)
+
+
 def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | None):
     fig = px.scatter_3d(
         projection_df,
@@ -412,6 +492,12 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         plot_bgcolor="white",
         margin=dict(l=0, r=0, t=46, b=0),
         legend_title_text="Historical label",
+        legend=dict(
+            font=dict(color="black"),
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=1,
+        ),
         font=dict(color="black"),
         scene=dict(
             bgcolor="white",
@@ -462,7 +548,7 @@ def main():
         label_visibility="collapsed",
     )
 
-    model_bundle, shap_features, unified_df, shap_global_b64 = load_assets()
+    model_bundle, shap_features, unified_df = load_assets()
     pca_model, projection_df = build_pca_projection()
     mendeley_df = unified_df[unified_df["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
 
@@ -589,6 +675,7 @@ def main():
             "latency_ms": round(latency_ms, 2),
             "pca_coords": [float(value) for value in current_star],
         }
+        st.session_state["track_b_advisor_generated"] = False
         st.session_state["track_b_prediction_payload"] = report_dict
         prediction_payload = report_dict
         st.rerun()
@@ -607,11 +694,8 @@ def main():
         st.markdown('<div class="card">', unsafe_allow_html=True)
         figure = make_prediction_plot(projection_df, current_star)
         st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
-        st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
         result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
         if prediction_payload:
-            state_class = "resistant" if prediction_label == "Resistant" else "susceptible"
-            st.markdown(f'<div class="prediction-state {state_class}">', unsafe_allow_html=True)
             st.markdown(
                 f'<div class="prediction-text" style="color:#0a0a0f;">{prediction_label.upper()}</div>',
                 unsafe_allow_html=True,
@@ -628,10 +712,14 @@ def main():
                 """,
                 unsafe_allow_html=True,
             )
-            st.markdown('<div style="height:18px;"></div>', unsafe_allow_html=True)
+            st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
             st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
             render_local_shap_bars(local_top_features[:5])
-            st.markdown("</div>", unsafe_allow_html=True)
+            generate_clicked = st.button("Generate Clinical Interpretation", use_container_width=True)
+            if generate_clicked:
+                st.session_state["track_b_advisor_generated"] = True
+                st.rerun()
+            render_advisor_box(prediction_label, confidence_pct, resistant_probability, local_top_features)
         else:
             st.markdown(
                 '<div class="prediction-sub">Run a prediction to place the current patient inside the historical cluster map.</div>',
@@ -643,13 +731,9 @@ def main():
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
-        if shap_global_b64:
-            st.markdown(
-                f'<img src="data:image/png;base64,{shap_global_b64}" style="width:100%; border-radius:12px; margin-top:12px;" />',
-                unsafe_allow_html=True,
-            )
         st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
     main()
+
