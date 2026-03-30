@@ -336,11 +336,10 @@ def load_assets():
 @st.cache_resource
 def build_pca_projection():
     model_bundle, _, data = load_assets()
-    mendeley = data[data["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
-    if mendeley.empty:
-        raise ValueError("No Mendeley rows found for PCA projection.")
+    if data.empty:
+        raise ValueError("No rows found for PCA projection.")
 
-    frame = mendeley.copy()
+    frame = data.copy()
     label_series = frame["resistance_label"].astype(str).str.upper().replace({"I": "S"})
     matrix = prepare_bundle_features(frame, model_bundle)
     pca = PCA(n_components=3, random_state=42)
@@ -496,9 +495,9 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         z="pc3",
         color="label_name",
         color_discrete_map={"Susceptible": ACCENT, "Resistant": RESISTANT},
-        opacity=0.8,
+        opacity=0.6,
     )
-    fig.update_traces(marker=dict(size=5))
+    fig.update_traces(marker=dict(size=2))
     fig.update_layout(
         paper_bgcolor="white",
         plot_bgcolor="white",
@@ -537,7 +536,7 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
                 y=[star_coords[1]],
                 z=[star_coords[2]],
                 mode="markers",
-                marker=dict(symbol="diamond", size=10, color="yellow", line=dict(color="blue", width=2)),
+                marker=dict(symbol="diamond", size=12, color="yellow", line=dict(color="blue", width=2)),
                 name="Current patient",
             )
         )
