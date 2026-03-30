@@ -9,6 +9,7 @@ import joblib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 
@@ -249,6 +250,67 @@ def render_metric_card(icon: str, label: str, value: str, subtext: str = ""):
     )
 
 
+def bounded_score(value: float, baseline: float) -> float:
+    if baseline <= 0:
+        return 0.0
+    return max(0.0, min(1.0, 1.0 / (1.0 + (float(value) / float(baseline)))))
+
+
+def make_radar_chart(title: str, labels: list[str], values: list[float], color: str, note: str):
+    theta = labels + [labels[0]]
+    r_values = values + [values[0]]
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatterpolar(
+            r=r_values,
+            theta=theta,
+            fill="toself",
+            fillcolor="rgba(0, 102, 204, 0.16)" if color == ACCENT else "rgba(204, 0, 0, 0.12)",
+            line=dict(color=color, width=3),
+            marker=dict(color=color, size=8),
+            hovertemplate="%{theta}: %{r:.3f}<extra></extra>",
+            name=title,
+        )
+    )
+    fig.update_layout(
+        margin=dict(l=30, r=30, t=60, b=70),
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        showlegend=False,
+        title=dict(text=title, font=dict(color=TEXT, size=18)),
+        polar=dict(
+            bgcolor="#ffffff",
+            radialaxis=dict(
+                visible=True,
+                range=[0, 1],
+                tickfont=dict(color=TEXT),
+                gridcolor="#d9d9d9",
+                linecolor="#000000",
+                tickcolor="#000000",
+            ),
+            angularaxis=dict(
+                tickfont=dict(color=TEXT, size=12),
+                gridcolor="#d9d9d9",
+                linecolor="#000000",
+                tickcolor="#000000",
+            ),
+        ),
+        annotations=[
+            dict(
+                text=note,
+                x=0.5,
+                y=-0.14,
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(color=TEXT, size=11),
+                align="center",
+            )
+        ],
+    )
+    return fig
+
+
 def main():
     st.markdown(CSS, unsafe_allow_html=True)
     st.sidebar.title("Horizon")
@@ -358,6 +420,34 @@ def main():
 
     with tab3:
         st.markdown('<div class="section-title">Model Performance</div>', unsafe_allow_html=True)
+        forecaster_radar = make_radar_chart(
+            "Forecaster Radar",
+            ["R²", "MAE Quality", "RMSE Quality"],
+            [
+                float(forecaster_metrics.get("r2", 0.0)),
+                bounded_score(forecaster_metrics.get("mae", 0.0), 500.0),
+                bounded_score(forecaster_metrics.get("rmse", 0.0), 2000.0),
+            ],
+            ACCENT,
+            "Lower error is better. MAE/RMSE are shown as inverse quality scores for visual comparison.",
+        )
+        classifier_radar = make_radar_chart(
+            "Classifier Radar",
+            ["Accuracy", "Macro F1", "Class Coverage"],
+            [
+                float(classifier_metrics.get("accuracy", 0.0)),
+                float(classifier_metrics.get("macro_f1", 0.0)),
+                min(len(classifier_metrics.get("classes", [])) / 3.0, 1.0),
+            ],
+            "#cc0000",
+            "Class coverage equals observed risk classes divided by the expected three-label set.",
+        )
+        r1, r2 = st.columns(2, gap="large")
+        with r1:
+            st.plotly_chart(forecaster_radar, use_container_width=True)
+        with r2:
+            st.plotly_chart(classifier_radar, use_container_width=True)
+
         c1, c2 = st.columns(2, gap="large")
         with c1:
             st.markdown('<div class="section-title">Forecaster</div>', unsafe_allow_html=True)
