@@ -68,6 +68,9 @@ st.set_page_config(page_title="Horizon | Track B", layout="wide", page_icon="\U0
 CSS = f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    *, *::before, *::after {{
+        border-radius: 0px !important;
+    }}
     html, body, [class*="css"]  {{
         font-family: 'Inter', system-ui, sans-serif;
     }}
@@ -93,19 +96,17 @@ CSS = f"""
     }}
     .card {{
         background: {CARD_BG};
-        border: 1px solid {BORDER};
-        border-radius: 12px;
+        border: 2px solid {ACCENT};
         padding: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        box-shadow: 4px 4px 0px {ACCENT};
         height: 100%;
     }}
     .metric-card {{
         background: {CARD_BG};
-        border: 1px solid {BORDER};
-        border-radius: 12px;
+        border: 2px solid #ffffff;
         padding: 18px 20px;
         min-height: 122px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        box-shadow: 4px 4px 0px #ffffff;
     }}
     .metric-icon {{
         font-size: 1.25rem;
@@ -144,21 +145,22 @@ CSS = f"""
     .divider {{
         height: 2px;
         background: linear-gradient(90deg, {ACCENT}, transparent);
-        border-radius: 999px;
         margin-bottom: 0.9rem;
     }}
     .warning-banner {{
         background: rgba(255, 184, 0, 0.12);
-        border: 1px solid rgba(255, 184, 0, 0.35);
+        border: 2px solid #ffa502;
         color: #f5d97b;
-        border-radius: 12px;
         padding: 12px 16px;
         margin-bottom: 1rem;
         font-weight: 600;
+        box-shadow: 4px 4px 0px #ffa502;
     }}
     .section-title {{
         font-size: 1.02rem;
-        font-weight: 700;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
         color: #ffffff;
         margin-bottom: 0.9rem;
     }}
@@ -181,17 +183,29 @@ CSS = f"""
         color: {TEXT_MUTED};
         margin-bottom: 0.85rem;
     }}
+    .prediction-state {{
+        margin-top: 18px;
+        padding: 18px;
+        border: 3px solid #ffffff;
+        box-shadow: 6px 6px 0px #ffffff;
+    }}
+    .prediction-state.resistant {{
+        border: 3px solid {RESISTANT};
+        box-shadow: 6px 6px 0px {RESISTANT};
+    }}
+    .prediction-state.susceptible {{
+        border: 3px solid {SUSCEPTIBLE};
+        box-shadow: 6px 6px 0px {SUSCEPTIBLE};
+    }}
     .progress-shell {{
         width: 100%;
         height: 14px;
-        border-radius: 999px;
         background: #191926;
         overflow: hidden;
-        border: 1px solid {BORDER};
+        border: 2px solid #ffffff;
     }}
     .progress-fill {{
         height: 100%;
-        border-radius: 999px;
         transition: width 0.3s ease;
     }}
     .local-bar {{
@@ -215,31 +229,28 @@ CSS = f"""
     .local-bar-track {{
         width: 100%;
         height: 12px;
-        border-radius: 999px;
         background: #171726;
-        border: 1px solid {BORDER};
+        border: 2px solid {ACCENT};
         overflow: hidden;
     }}
     .local-bar-fill {{
         height: 100%;
-        border-radius: 999px;
         background: linear-gradient(90deg, {ACCENT}, #7a5cff);
-        box-shadow: 0 0 18px rgba(0, 212, 255, 0.35);
+        box-shadow: 3px 3px 0px #7a5cff;
     }}
     .advisor-box {{
         background: linear-gradient(135deg, rgba(64, 45, 145, 0.4), rgba(0, 68, 122, 0.35)), {CARD_BG};
-        border: 1px solid rgba(0, 212, 255, 0.24);
-        border-radius: 14px;
+        border: 2px solid {ACCENT};
         padding: 20px;
         min-height: 320px;
-        box-shadow: inset 0 0 30px rgba(0, 212, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.35);
+        box-shadow: 4px 4px 0px {ACCENT};
     }}
     .advisor-card {{
         background: rgba(11, 16, 27, 0.48);
-        border: 1px solid rgba(0, 212, 255, 0.15);
-        border-radius: 12px;
+        border: 2px solid {ACCENT};
         padding: 18px;
         height: 100%;
+        box-shadow: 4px 4px 0px {ACCENT};
     }}
     .advisor-title {{
         font-size: 1.1rem;
@@ -265,7 +276,7 @@ CSS = f"""
     }}
     .pill {{
         display: inline-block;
-        border-radius: 999px;
+        border: 2px solid {ACCENT};
         padding: 4px 10px;
         font-size: 0.75rem;
         font-weight: 700;
@@ -273,6 +284,7 @@ CSS = f"""
         color: {ACCENT};
         margin-right: 8px;
         margin-bottom: 8px;
+        box-shadow: 3px 3px 0px {ACCENT};
     }}
     .small-note {{
         color: {TEXT_MUTED};
@@ -282,22 +294,23 @@ CSS = f"""
     .stButton > button, .stDownloadButton > button {{
         background: {ACCENT};
         color: #07111a;
-        border: none;
-        border-radius: 12px;
+        border: 2px solid #000 !important;
         font-weight: 800;
-        box-shadow: 0 0 20px rgba(0, 212, 255, 0.22);
+        box-shadow: 3px 3px 0px #000;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
     }}
     .stButton > button:hover, .stDownloadButton > button:hover {{
         background: #37defc;
         color: #07111a;
+        box-shadow: 1px 1px 0px #000;
+        transform: translate(2px, 2px);
     }}
     div[data-baseweb="select"] > div,
     div[data-baseweb="input"] > div,
     .stNumberInput div[data-baseweb="input"] > div {{
         background: {INPUT_BG} !important;
-        border: 1px solid {BORDER} !important;
+        border: 2px solid {ACCENT} !important;
         color: #f5f7fb !important;
-        border-radius: 10px !important;
     }}
     label, .stSelectbox label, .stNumberInput label {{
         color: {TEXT_MUTED} !important;
@@ -697,6 +710,8 @@ def main():
         st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
         result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
         if prediction_payload:
+            state_class = "resistant" if prediction_label == "Resistant" else "susceptible"
+            st.markdown(f'<div class="prediction-state {state_class}">', unsafe_allow_html=True)
             st.markdown(
                 f'<div class="prediction-text" style="color:{result_color};">{prediction_label.upper()}</div>',
                 unsafe_allow_html=True,
@@ -713,6 +728,7 @@ def main():
                 """,
                 unsafe_allow_html=True,
             )
+            st.markdown("</div>", unsafe_allow_html=True)
         else:
             st.markdown(
                 '<div class="prediction-sub">Run a prediction to place the current patient inside the historical cluster map.</div>',
