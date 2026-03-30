@@ -446,7 +446,7 @@ def render_advisor_box(
     generated = st.session_state.get("track_b_advisor_generated", False)
     placeholder_html = """
     <div class="advisor-box">
-        <div class="advisor-title">AI Clinical Interpretation</div>
+        <div class="advisor-title">Horizon Intelligence</div>
         <div class="advisor-copy placeholder">Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.</div>
     </div>
     """
@@ -464,7 +464,7 @@ def render_advisor_box(
     rec_items = "".join([f"<li>{item}</li>" for item in recommendations])
     advisor_html = f"""
     <div class="advisor-box">
-        <div class="advisor-title">AI Clinical Interpretation</div>
+        <div class="advisor-title">Horizon Intelligence</div>
         <div class="advisor-copy">{interpretation}</div>
         <div class="advisor-title">Key Drivers</div>
         <ul class="advisor-list">{driver_items}</ul>
@@ -563,7 +563,7 @@ def main():
     pca_model, projection_df = build_pca_projection()
     mendeley_df = unified_df[unified_df["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
 
-    st.markdown('<div class="hero-title">AI Clinical Advisor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">Horizon</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">Track B &mdash; Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     st.markdown(
@@ -614,7 +614,6 @@ def main():
     infection_options = ["Low", "Medium", "High"]
 
     with left_col:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Patient Input Command Center</div>', unsafe_allow_html=True)
         st.markdown('<div class="section-step">1. Patient Details</div>', unsafe_allow_html=True)
         species = st.selectbox("Species", species_options, index=0 if species_options else None)
@@ -633,7 +632,6 @@ def main():
 
         st.markdown('<div class="section-step">3. Resistance Prediction</div>', unsafe_allow_html=True)
         predict_clicked = st.button("Predict Resistance", use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     current_star = None
     local_top_features = []
@@ -702,7 +700,6 @@ def main():
             current_star = np.asarray(prediction_payload["pca_coords"], dtype=float)
 
     with center_col:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         figure = make_prediction_plot(projection_df, current_star)
         st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
         result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
@@ -736,13 +733,10 @@ def main():
                 '<div class="prediction-sub">Run a prediction to place the current patient inside the historical cluster map.</div>',
                 unsafe_allow_html=True,
             )
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with right_col:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
