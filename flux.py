@@ -1,4 +1,4 @@
-# RUN COMMAND: streamlit run flux.py
+﻿# RUN COMMAND: streamlit run flux.py
 from __future__ import annotations
 
 import runpy
@@ -15,11 +15,11 @@ BORDER = "#000000"
 TEXT = "#0a0a0f"
 
 TRACKS = {
-    "🧬 Track B — Antibiotic Resistance": PROJECT_ROOT / "track_b" / "app.py",
-    "🧪 Track A — Drug Toxicity": PROJECT_ROOT / "track_a" / "app.py",
-    "🦠 Track C — Epidemic Spread": PROJECT_ROOT / "track_c" / "app.py",
+    "Track B — Antibiotic Resistance": PROJECT_ROOT / "track_b" / "app.py",
+    "Track A — Drug Toxicity": PROJECT_ROOT / "track_a" / "app.py",
+    "Track C — Epidemic Spread": PROJECT_ROOT / "track_c" / "app.py",
 }
-DEFAULT_TRACK = "🧬 Track B — Antibiotic Resistance"
+DEFAULT_TRACK = "Track B — Antibiotic Resistance"
 
 
 def _noop_set_page_config(*args, **kwargs):
@@ -45,6 +45,8 @@ def inject_css():
             [data-testid="stSidebar"] {{
                 background: #eeeeea;
                 border-right: 2px solid {BORDER};
+                min-width: 320px !important;
+                max-width: 320px !important;
             }}
             [data-testid="stSidebar"] * {{
                 color: {TEXT};
@@ -92,12 +94,12 @@ def run_track(track_name: str, script_path: Path):
     try:
         runpy.run_path(str(script_path), run_name="__main__")
     except FileNotFoundError:
-        if track_name == "🧪 Track A — Drug Toxicity":
+        if track_name == "Track A — Drug Toxicity":
             st.warning("Track A models are currently compiling. Please check back later.")
         else:
             st.error(f"{track_name} is missing required files.")
     except Exception as exc:
-        if track_name == "🧪 Track A — Drug Toxicity":
+        if track_name == "Track A — Drug Toxicity":
             st.warning("Track A models are currently compiling. Please check back later.")
         else:
             st.error(f"{track_name} failed to load: {exc}")
@@ -108,7 +110,7 @@ def run_track(track_name: str, script_path: Path):
 
 
 def main():
-    st.set_page_config(page_title="Horizon", layout="wide")
+    st.set_page_config(page_title="Horizon", layout="wide", initial_sidebar_state="expanded")
     inject_css()
 
     if "selected_track" not in st.session_state:
@@ -134,3 +136,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
