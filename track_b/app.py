@@ -52,14 +52,14 @@ KMER_COLUMNS = [
     "kmer4_AYGV",
 ]
 
-BACKGROUND = "#0a0a0f"
-CARD_BG = "#111118"
-BORDER = "#1e1e2e"
-INPUT_BG = "#1a1a2e"
-ACCENT = "#00d4ff"
-RESISTANT = "#ff4757"
-SUSCEPTIBLE = "#2ed573"
-TEXT_MUTED = "#a0a0b0"
+BACKGROUND = "#f5f5f0"
+CARD_BG = "#ffffff"
+BORDER = "#000000"
+INPUT_BG = "#ffffff"
+ACCENT = "#0066cc"
+RESISTANT = "#cc0000"
+SUSCEPTIBLE = "#006600"
+TEXT_MUTED = "#5f6368"
 
 
 st.set_page_config(page_title="Horizon | Track B", layout="wide", page_icon="\U0001F9EC")
@@ -76,18 +76,18 @@ CSS = f"""
     }}
     .stApp {{
         background: {BACKGROUND};
-        color: #f5f7fb;
+        color: #0a0a0f;
     }}
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     header {{visibility: hidden;}}
     [data-testid="stHeader"] {{display: none;}}
     [data-testid="stSidebar"] {{
-        background: #0d0d15;
-        border-right: 1px solid {BORDER};
+        background: #eeeeea;
+        border-right: 2px solid {BORDER};
     }}
     [data-testid="stSidebar"] * {{
-        color: #f5f7fb;
+        color: #0a0a0f;
     }}
     .block-container {{
         padding-top: 1.25rem;
@@ -103,10 +103,10 @@ CSS = f"""
     }}
     .metric-card {{
         background: {CARD_BG};
-        border: 2px solid #ffffff;
+        border: 2px solid #000000;
         padding: 18px 20px;
         min-height: 122px;
-        box-shadow: 4px 4px 0px #ffffff;
+        box-shadow: 4px 4px 0px #000000;
     }}
     .metric-icon {{
         font-size: 1.25rem;
@@ -119,7 +119,7 @@ CSS = f"""
         margin-bottom: 8px;
     }}
     .metric-value {{
-        color: #f5f7fb;
+        color: #0a0a0f;
         font-size: 1.8rem;
         font-weight: 800;
         line-height: 1.1;
@@ -132,7 +132,7 @@ CSS = f"""
     .hero-title {{
         font-size: 2.3rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #ffffff 0%, {ACCENT} 55%, #7a5cff 100%);
+        background: linear-gradient(90deg, #0a0a0f 0%, {ACCENT} 70%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.2rem;
@@ -148,20 +148,20 @@ CSS = f"""
         margin-bottom: 0.9rem;
     }}
     .warning-banner {{
-        background: rgba(255, 184, 0, 0.12);
-        border: 2px solid #ffa502;
-        color: #f5d97b;
+        background: #fff3cd;
+        border: 2px solid #000000;
+        color: #856404;
         padding: 12px 16px;
         margin-bottom: 1rem;
         font-weight: 600;
-        box-shadow: 4px 4px 0px #ffa502;
+        box-shadow: 4px 4px 0px #000000;
     }}
     .section-title {{
         font-size: 1.02rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        color: #ffffff;
+        color: #0a0a0f;
         margin-bottom: 0.9rem;
     }}
     .section-step {{
@@ -200,9 +200,9 @@ CSS = f"""
     .progress-shell {{
         width: 100%;
         height: 14px;
-        background: #191926;
+        background: #e8e8e0;
         overflow: hidden;
-        border: 2px solid #ffffff;
+        border: 2px solid #000000;
     }}
     .progress-fill {{
         height: 100%;
@@ -229,7 +229,7 @@ CSS = f"""
     .local-bar-track {{
         width: 100%;
         height: 12px;
-        background: #171726;
+        background: #e8e8e0;
         border: 2px solid {ACCENT};
         overflow: hidden;
     }}
@@ -239,14 +239,14 @@ CSS = f"""
         box-shadow: 3px 3px 0px #7a5cff;
     }}
     .advisor-box {{
-        background: linear-gradient(135deg, rgba(64, 45, 145, 0.4), rgba(0, 68, 122, 0.35)), {CARD_BG};
+        background: {CARD_BG};
         border: 2px solid {ACCENT};
         padding: 20px;
         min-height: 320px;
         box-shadow: 4px 4px 0px {ACCENT};
     }}
     .advisor-card {{
-        background: rgba(11, 16, 27, 0.48);
+        background: {CARD_BG};
         border: 2px solid {ACCENT};
         padding: 18px;
         height: 100%;
@@ -270,7 +270,7 @@ CSS = f"""
         line-height: 1.6;
     }}
     .advisor-response-text {{
-        color: #f5f7fb;
+        color: #0a0a0f;
         line-height: 1.7;
         white-space: pre-wrap;
     }}
@@ -280,7 +280,7 @@ CSS = f"""
         padding: 4px 10px;
         font-size: 0.75rem;
         font-weight: 700;
-        background: rgba(0, 212, 255, 0.12);
+        background: #eef5ff;
         color: {ACCENT};
         margin-right: 8px;
         margin-bottom: 8px;
@@ -293,15 +293,15 @@ CSS = f"""
     }}
     .stButton > button, .stDownloadButton > button {{
         background: {ACCENT};
-        color: #07111a;
+        color: #ffffff;
         border: 2px solid #000 !important;
         font-weight: 800;
         box-shadow: 3px 3px 0px #000;
         transition: transform 0.12s ease, box-shadow 0.12s ease;
     }}
     .stButton > button:hover, .stDownloadButton > button:hover {{
-        background: #37defc;
-        color: #07111a;
+        background: #0052a3;
+        color: #ffffff;
         box-shadow: 1px 1px 0px #000;
         transform: translate(2px, 2px);
     }}
@@ -310,7 +310,7 @@ CSS = f"""
     .stNumberInput div[data-baseweb="input"] > div {{
         background: {INPUT_BG} !important;
         border: 2px solid {ACCENT} !important;
-        color: #f5f7fb !important;
+        color: #0a0a0f !important;
     }}
     label, .stSelectbox label, .stNumberInput label {{
         color: {TEXT_MUTED} !important;
@@ -554,9 +554,9 @@ def main():
     st.sidebar.radio(
         "Tracks",
         [
-            "\U0001F9EC Track B â€” Antibiotic Resistance",
-            "\U0001F9EA Track A â€” Drug Toxicity",
-            "\U0001F9A0 Track C â€” Epidemic Spread",
+            "\U0001F9EC Track B ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Antibiotic Resistance",
+            "\U0001F9EA Track A ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Drug Toxicity",
+            "\U0001F9A0 Track C ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Epidemic Spread",
         ],
         index=0,
         label_visibility="collapsed",
@@ -567,7 +567,7 @@ def main():
     mendeley_df = unified_df[unified_df["source_dataset"].astype(str).str.lower() == "mendeley"].copy()
 
     st.markdown('<div class="hero-title">AI Clinical Advisor</div>', unsafe_allow_html=True)
-    st.markdown('<div class="hero-subtitle">Track B â€” Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">Track B &mdash; Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="warning-banner">&#9888; Model trained on Mendeley AMR dataset. For research use only.</div>',
@@ -607,7 +607,7 @@ def main():
                 return sorted(values)
         return fallback or []
 
-    species_options = get_unique_options(unified_df, "species_clean", ["unknown_species"])
+    species_options = get_unique_options(unified_df, "species_clean")
     antibiotic_options = get_unique_options(unified_df, "antibiotic_name")
     class_options = get_unique_options(unified_df, "antibiotic_class")
     gender_options = ["M", "F"]
@@ -747,7 +747,6 @@ def main():
             )
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown('<div style="height:16px"></div>', unsafe_allow_html=True)
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
         if prediction_payload:
@@ -756,7 +755,6 @@ def main():
             st.info("Run a prediction to compute local SHAP contributions.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown('<div style="height:18px"></div>', unsafe_allow_html=True)
     st.markdown('<div class="advisor-box">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">AI Clinical Advisor Box</div>', unsafe_allow_html=True)
     advisor_left, advisor_right = st.columns([1.4, 1.0], gap="large")
@@ -778,7 +776,7 @@ def main():
              border-radius: 12px;
              padding: 24px;
              margin-top: 16px;">
-    <div style="color: #f5f7fb; line-height: 1.7; white-space: pre-wrap;">{html.escape(advisor_text)}</div>
+    <div style="color: #0a0a0f; line-height: 1.7; white-space: pre-wrap;">{html.escape(advisor_text)}</div>
 </div>
 """
                 st.markdown(advisor_html, unsafe_allow_html=True)
