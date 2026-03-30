@@ -165,6 +165,11 @@ def run_track(track_name: str, script_path: Path):
 
 
 def render_drawer():
+    button_label = "Hide Tracks" if st.session_state["nav_open"] else "Show Tracks"
+    if st.button(button_label, use_container_width=True, key="toggle_drawer"):
+        st.session_state["nav_open"] = not st.session_state["nav_open"]
+        st.rerun()
+
     st.markdown(
         """
         <div class="status-card">
@@ -176,7 +181,10 @@ def render_drawer():
         """,
         unsafe_allow_html=True,
     )
-    st.markdown('<div class="drawer-card">', unsafe_allow_html=True)
+
+    if not st.session_state["nav_open"]:
+        return
+
     st.markdown('<div class="drawer-heading">Tracks</div>', unsafe_allow_html=True)
     st.markdown(
         f'<div class="track-pill">Current: {st.session_state["selected_track"]}</div>',
@@ -197,8 +205,6 @@ def render_drawer():
         st.session_state["nav_open"] = False
         st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 def main():
     st.set_page_config(page_title="Horizon", layout="wide")
@@ -209,13 +215,10 @@ def main():
     if "nav_open" not in st.session_state:
         st.session_state["nav_open"] = False
 
-    top_left, top_right = st.columns([0.18, 0.82], gap="small")
-    with top_left:
-        button_label = "Hide Tracks" if st.session_state["nav_open"] else "Show Tracks"
-        if st.button(button_label, use_container_width=True, key="toggle_drawer"):
-            st.session_state["nav_open"] = not st.session_state["nav_open"]
-            st.rerun()
-    with top_right:
+    nav_col, main_col = st.columns([0.24, 0.76], gap="large")
+    with nav_col:
+        render_drawer()
+    with main_col:
         st.markdown(
             """
             <div class="hub-topbar">
@@ -227,14 +230,6 @@ def main():
             """,
             unsafe_allow_html=True,
         )
-
-    if st.session_state["nav_open"]:
-        nav_col, main_col = st.columns([0.24, 0.76], gap="large")
-        with nav_col:
-            render_drawer()
-        with main_col:
-            run_track(st.session_state["selected_track"], TRACKS[st.session_state["selected_track"]])
-    else:
         run_track(st.session_state["selected_track"], TRACKS[st.session_state["selected_track"]])
 
 
