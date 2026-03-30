@@ -296,6 +296,19 @@ CSS = f"""
         color: #0a0a0f !important;
         background-color: #ffffff !important;
     }}
+    div[role="listbox"] {{
+        background: #ffffff !important;
+        color: #0a0a0f !important;
+        border: 2px solid {ACCENT} !important;
+    }}
+    div[role="option"] {{
+        background: #ffffff !important;
+        color: #0a0a0f !important;
+    }}
+    div[role="option"]:hover {{
+        background: #e8f1ff !important;
+        color: #0a0a0f !important;
+    }}
     label, .stSelectbox label, .stNumberInput label {{
         color: {TEXT_MUTED} !important;
         font-weight: 600 !important;
@@ -605,6 +618,8 @@ def main():
         return fallback or []
 
     species_options = get_unique_options(unified_df, "species_clean")
+    if not species_options:
+        species_options = get_unique_options(unified_df, "species")
     antibiotic_options = get_unique_options(unified_df, "antibiotic_name")
     class_options = get_unique_options(unified_df, "antibiotic_class")
     gender_options = ["M", "F"]
@@ -626,8 +641,8 @@ def main():
         site = st.selectbox("Site", site_options, index=0 if site_options else None)
         sample_type = st.selectbox("Sample type", sample_type_options, index=0 if sample_type_options else None)
         hospital_before = st.selectbox("Hospital_before", yes_no_options, index=0 if yes_no_options else None)
-        hypertension = st.selectbox("Hypertension", sorted(mendeley_df["Hypertension"].dropna().astype(str).unique().tolist()), index=0)
-        diabetes = st.selectbox("Diabetes", sorted(mendeley_df["Diabetes"].dropna().astype(str).unique().tolist()), index=0)
+        hypertension = st.selectbox("Hypertension", yes_no_options, index=0 if yes_no_options else None)
+        diabetes = st.selectbox("Diabetes", yes_no_options, index=0 if yes_no_options else None)
         infection_freq = st.selectbox("Infection_Freq", infection_options, index=0 if infection_options else None)
 
         st.markdown('<div class="section-step">3. Resistance Prediction</div>', unsafe_allow_html=True)
