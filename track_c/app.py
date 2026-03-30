@@ -11,140 +11,328 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent.parent if SCRIPT_DIR.parent.name == "code" else SCRIPT_DIR
-ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 
-st.set_page_config(page_title="Track C - Epidemic Spread", layout="wide")
-st.title("Epidemic Spread Prediction Dashboard")
+SCRIPT_DIR = Path(__file__).resolve().parent
+ARTIFACTS_DIR = SCRIPT_DIR / "artifacts"
+DATA_DIR = SCRIPT_DIR / "data"
+
+BACKGROUND = "#f5f5f0"
+CARD_BG = "#ffffff"
+BORDER = "#000000"
+ACCENT = "#0066cc"
+TEXT = "#0a0a0f"
+
+st.set_page_config(page_title="Horizon | Track C", layout="wide", page_icon="🦠")
+
+CSS = f"""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    *, *::before, *::after {{
+        border-radius: 0px !important;
+    }}
+    html, body, [class*="css"] {{
+        font-family: 'Inter', system-ui, sans-serif;
+    }}
+    .stApp {{
+        background: {BACKGROUND};
+        color: {TEXT};
+    }}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
+    [data-testid="stHeader"] {{display:none;}}
+    [data-testid="stSidebar"] {{
+        background: #eeeeea;
+        border-right: 2px solid {BORDER};
+    }}
+    [data-testid="stSidebar"] * {{
+        color: {TEXT};
+    }}
+    .block-container {{
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+        max-width: 1800px;
+    }}
+    .metric-card {{
+        background: {CARD_BG};
+        border: 2px solid {BORDER};
+        padding: 18px 20px;
+        min-height: 122px;
+        box-shadow: 4px 4px 0px {BORDER};
+    }}
+    .metric-icon {{
+        font-size: 1.25rem;
+        margin-bottom: 10px;
+        color: {TEXT};
+    }}
+    .metric-label {{
+        color: {TEXT};
+        font-size: 0.86rem;
+        margin-bottom: 8px;
+    }}
+    .metric-value {{
+        color: {TEXT};
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }}
+    .metric-sub {{
+        color: {TEXT};
+        font-size: 0.82rem;
+        margin-top: 6px;
+    }}
+    .hero-title {{
+        font-size: 2.3rem;
+        font-weight: 800;
+        color: {TEXT};
+        margin-bottom: 0.2rem;
+    }}
+    .hero-subtitle {{
+        color: {TEXT};
+        font-size: 1.02rem;
+        margin-bottom: 0.75rem;
+    }}
+    .divider {{
+        height: 2px;
+        background: linear-gradient(90deg, {ACCENT}, transparent);
+        margin-bottom: 0.9rem;
+    }}
+    .warning-banner {{
+        background: #fff3cd;
+        border: 2px solid {BORDER};
+        color: #856404;
+        padding: 12px 16px;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        box-shadow: 4px 4px 0px {BORDER};
+    }}
+    .card {{
+        background: {CARD_BG};
+        border: 2px solid {ACCENT};
+        padding: 20px;
+        box-shadow: 4px 4px 0px {ACCENT};
+        height: 100%;
+    }}
+    .section-title {{
+        font-size: 1.02rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: {TEXT};
+        margin-bottom: 0.9rem;
+    }}
+    .small-note {{
+        color: {TEXT};
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }}
+    div[data-baseweb="select"] > div {{
+        background: #ffffff !important;
+        border: 2px solid {ACCENT} !important;
+        color: {TEXT} !important;
+    }}
+    div[role="listbox"] {{
+        background: #ffffff !important;
+        color: {TEXT} !important;
+        border: 2px solid {ACCENT} !important;
+    }}
+    div[role="option"] {{
+        background: #ffffff !important;
+        color: {TEXT} !important;
+    }}
+    div[role="option"]:hover {{
+        background: #e8f1ff !important;
+        color: {TEXT} !important;
+    }}
+    label, .stSelectbox label {{
+        color: {TEXT} !important;
+        font-weight: 600 !important;
+    }}
+</style>
+"""
 
 
 def resolve_artifact(name: str) -> Path:
-    candidates = [ARTIFACTS_DIR / name, PROJECT_ROOT / name, SCRIPT_DIR / name]
-    for p in candidates:
-        if p.exists():
-            return p
+    candidates = [ARTIFACTS_DIR / name, SCRIPT_DIR / name]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
     return candidates[0]
 
 
 @st.cache_resource
 def load_models():
-    try:
-        fc = joblib.load(resolve_artifact("track_c_forecaster.pkl"))
-        cl = joblib.load(resolve_artifact("track_c_classifier.pkl"))
-        return fc, cl
-    except FileNotFoundError:
-        return None, None
-
-
-@st.cache_data
-def load_data():
-    try:
-        from track_c_data_loader import load_combined
-
-        data_path = PROJECT_ROOT / "data" / "time_series_covid19_confirmed_global.csv"
-        owid_path = PROJECT_ROOT / "data" / "owid-covid-data.csv"
-        if data_path.exists():
-            return load_combined(str(data_path), str(owid_path))
-        return load_combined()
-    except Exception as e:
-        st.error(f"Data load error: {e}")
-        return None
+    forecaster = joblib.load(resolve_artifact("track_c_forecaster.pkl"))
+    classifier = joblib.load(resolve_artifact("track_c_classifier.pkl"))
+    return forecaster, classifier
 
 
 @st.cache_data
 def load_results():
-    try:
-        with open(resolve_artifact("track_c_results.json"), encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return None
+    with open(resolve_artifact("track_c_results.json"), encoding="utf-8") as handle:
+        return json.load(handle)
 
 
-fc_model, cl_model = load_models()
-df = load_data()
-results = load_results()
+@st.cache_data
+def load_data():
+    from track_c_data_loader import load_combined
 
-tab1, tab2, tab3 = st.tabs(["Case Forecast", "Risk Map", "Model Performance"])
+    jhu_path = DATA_DIR / "time_series_covid19_confirmed_global.csv"
+    owid_path = DATA_DIR / "owid-covid-data.csv"
+    if jhu_path.exists():
+        return load_combined(str(jhu_path), str(owid_path))
+    return load_combined()
 
-with tab1:
-    st.subheader("Country-level Case Forecast")
-    if df is not None:
-        countries = sorted(df["Country/Region"].unique())
-        country = st.selectbox(
-            "Select country",
-            countries,
-            index=countries.index("India") if "India" in countries else 0,
-        )
-        cdf = df[df["Country/Region"] == country].sort_values("date")
 
-        fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-        axes[0].plot(cdf["date"], cdf["confirmed"], color="#378ADD", linewidth=1.5)
-        axes[0].set_title(f"Cumulative confirmed - {country}")
-        axes[0].set_ylabel("Total cases")
+def render_metric_card(icon: str, label: str, value: str, subtext: str = ""):
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-icon">{icon}</div>
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{value}</div>
+            <div class="metric-sub">{subtext}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        axes[1].bar(cdf["date"], cdf["daily_new"], color="#D85A30", alpha=0.6, width=1, label="Daily new")
-        axes[1].plot(cdf["date"], cdf["rolling_7d"], color="#533AB7", linewidth=2, label="7-day avg")
-        axes[1].set_title("Daily new cases")
-        axes[1].set_ylabel("Cases")
-        axes[1].legend()
 
-        for ax in axes:
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
-            ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-        plt.xticks(rotation=30)
-        plt.tight_layout()
-        st.pyplot(fig)
+def main():
+    st.markdown(CSS, unsafe_allow_html=True)
+    st.sidebar.title("Horizon")
+    st.sidebar.caption("Track navigation")
+    st.sidebar.radio(
+        "Tracks",
+        [
+            "🧬 Track B — Antibiotic Resistance",
+            "🧪 Track A — Drug Toxicity",
+            "🦠 Track C — Epidemic Spread",
+        ],
+        index=2,
+        label_visibility="collapsed",
+    )
 
-        st.subheader("Risk level over time")
-        risk_counts = cdf["risk_label"].value_counts()
-        c1, c2, c3 = st.columns(3)
-        for col, label in zip([c1, c2, c3], ["Low", "Medium", "High"]):
-            count = risk_counts.get(label, 0)
-            pct = round(100 * count / len(cdf), 1)
-            col.metric(label, f"{pct}% of days")
+    forecaster_model, classifier_model = load_models()
+    _ = forecaster_model, classifier_model
+    results = load_results()
+    df = load_data()
 
-with tab2:
-    st.subheader("Global Risk Snapshot - latest available date")
-    if df is not None:
-        latest = df.groupby("Country/Region").last().reset_index()
-        risk_df = latest[["Country/Region", "rolling_7d", "risk_label", "confirmed"]].copy()
-        risk_df = risk_df.sort_values("rolling_7d", ascending=False).head(40)
+    st.markdown('<div class="hero-title">Epidemic Spread Prediction</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-subtitle">Track C — COVID-19 Spread Forecasting</div>', unsafe_allow_html=True)
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="warning-banner">&#9888; Model trained on historical epidemic time-series data. For research use only.</div>',
+        unsafe_allow_html=True,
+    )
 
-        fig2, ax2 = plt.subplots(figsize=(10, 8))
-        colors = [
-            {"Low": "#639922", "Medium": "#BA7517", "High": "#A32D2D"}.get(str(r), "#888780")
-            for r in risk_df["risk_label"]
-        ]
-        ax2.barh(risk_df["Country/Region"], risk_df["rolling_7d"], color=colors)
-        ax2.set_xlabel("7-day avg daily new cases")
-        ax2.set_title("Top 40 countries by recent case load")
-        ax2.invert_yaxis()
+    forecaster_metrics = results.get("forecaster", {})
+    classifier_metrics = results.get("classifier", {})
 
-        from matplotlib.patches import Patch
+    m1, m2, m3, m4 = st.columns(4, gap="small")
+    with m1:
+        render_metric_card("&#128200;", "Forecaster R²", f"{forecaster_metrics.get('r2', 'N/A')}", "Temporal holdout evaluation")
+    with m2:
+        render_metric_card("&#128202;", "MAE", f"{forecaster_metrics.get('mae', 'N/A')} cases", "Average absolute error")
+    with m3:
+        render_metric_card("&#9889;", "RMSE", f"{forecaster_metrics.get('rmse', 'N/A')} cases", "Root mean squared error")
+    with m4:
+        render_metric_card("&#129514;", "Classifier Accuracy", f"{classifier_metrics.get('accuracy', 'N/A')}", "Risk label performance")
 
-        legend = [
-            Patch(color="#A32D2D", label="High"),
-            Patch(color="#BA7517", label="Medium"),
-            Patch(color="#639922", label="Low"),
-        ]
-        ax2.legend(handles=legend)
-        plt.tight_layout()
-        st.pyplot(fig2)
+    tab1, tab2, tab3 = st.tabs(["Case Forecast", "Risk Map", "Model Performance"])
 
-with tab3:
-    if results:
-        st.subheader("Forecaster performance")
-        f = results.get("forecaster", {})
-        c1, c2, c3 = st.columns(3)
-        c1.metric("MAE", f"{f.get('mae', 'N/A')} cases")
-        c2.metric("RMSE", f"{f.get('rmse', 'N/A')} cases")
-        c3.metric("R2", f.get("r2", "N/A"))
+    with tab1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Country-level Case Forecast</div>', unsafe_allow_html=True)
+        if df is not None and not df.empty:
+            countries = sorted(df["Country/Region"].dropna().unique().tolist())
+            country = st.selectbox(
+                "Select country",
+                countries,
+                index=countries.index("India") if "India" in countries else 0,
+            )
+            cdf = df[df["Country/Region"] == country].sort_values("date")
 
-        st.subheader("Risk classifier performance")
-        c = results.get("classifier", {})
-        c1, c2 = st.columns(2)
-        c1.metric("Accuracy", c.get("accuracy", "N/A"))
-        c2.metric("Macro F1", c.get("macro_f1", "N/A"))
-    else:
-        st.info("Run track_c_model.py first to see results.")
+            fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+            axes[0].plot(cdf["date"], cdf["confirmed"], color="#0066cc", linewidth=1.8)
+            axes[0].set_title(f"Cumulative confirmed — {country}", color=TEXT)
+            axes[0].set_ylabel("Total cases", color=TEXT)
+            axes[0].tick_params(colors=TEXT)
+
+            axes[1].bar(cdf["date"], cdf["daily_new"], color="#cc0000", alpha=0.65, width=1, label="Daily new")
+            axes[1].plot(cdf["date"], cdf["rolling_7d"], color="#006600", linewidth=2, label="7-day avg")
+            axes[1].set_title("Daily new cases", color=TEXT)
+            axes[1].set_ylabel("Cases", color=TEXT)
+            axes[1].tick_params(colors=TEXT)
+            axes[1].legend()
+
+            for ax in axes:
+                ax.set_facecolor("#ffffff")
+                ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+            plt.xticks(rotation=30)
+            plt.tight_layout()
+            st.pyplot(fig)
+
+            st.markdown('<div class="section-title">Risk level over time</div>', unsafe_allow_html=True)
+            risk_counts = cdf["risk_label"].value_counts()
+            c1, c2, c3 = st.columns(3)
+            for col, label in zip([c1, c2, c3], ["Low", "Medium", "High"]):
+                count = risk_counts.get(label, 0)
+                pct = round(100 * count / len(cdf), 1)
+                col.metric(label, f"{pct}% of days")
+        else:
+            st.info("No Track C data available.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with tab2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Global Risk Snapshot</div>', unsafe_allow_html=True)
+        if df is not None and not df.empty:
+            latest = df.groupby("Country/Region").last().reset_index()
+            risk_df = latest[["Country/Region", "rolling_7d", "risk_label", "confirmed"]].copy()
+            risk_df = risk_df.sort_values("rolling_7d", ascending=False).head(40)
+
+            fig2, ax2 = plt.subplots(figsize=(10, 8))
+            colors = [
+                {"Low": "#006600", "Medium": "#b36b00", "High": "#cc0000"}.get(str(r), "#666666")
+                for r in risk_df["risk_label"]
+            ]
+            ax2.barh(risk_df["Country/Region"], risk_df["rolling_7d"], color=colors)
+            ax2.set_xlabel("7-day avg daily new cases", color=TEXT)
+            ax2.set_title("Top 40 countries by recent case load", color=TEXT)
+            ax2.tick_params(colors=TEXT)
+            ax2.invert_yaxis()
+            plt.tight_layout()
+            st.pyplot(fig2)
+        else:
+            st.info("No Track C data available.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with tab3:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Model Performance</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2, gap="large")
+        with c1:
+            st.markdown('<div class="section-title">Forecaster</div>', unsafe_allow_html=True)
+            st.metric("MAE", f"{forecaster_metrics.get('mae', 'N/A')} cases")
+            st.metric("RMSE", f"{forecaster_metrics.get('rmse', 'N/A')} cases")
+            st.metric("R²", forecaster_metrics.get("r2", "N/A"))
+            st.markdown(
+                f'<div class="small-note">Train rows: {forecaster_metrics.get("n_train", "N/A")} | Test rows: {forecaster_metrics.get("n_test", "N/A")}</div>',
+                unsafe_allow_html=True,
+            )
+        with c2:
+            st.markdown('<div class="section-title">Risk Classifier</div>', unsafe_allow_html=True)
+            st.metric("Accuracy", classifier_metrics.get("accuracy", "N/A"))
+            st.metric("Macro F1", classifier_metrics.get("macro_f1", "N/A"))
+            st.metric("Classes", ", ".join(classifier_metrics.get("classes", [])))
+            st.markdown(
+                f'<div class="small-note">Train rows: {classifier_metrics.get("n_train", "N/A")} | Test rows: {classifier_metrics.get("n_test", "N/A")}</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+if __name__ == "__main__":
+    main()
