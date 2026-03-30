@@ -488,22 +488,22 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         y="pc2",
         z="pc3",
         color="label_name",
-        color_discrete_map={"Susceptible": SUSCEPTIBLE, "Resistant": RESISTANT},
-        template="plotly_dark",
+        color_discrete_map={"Susceptible": ACCENT, "Resistant": RESISTANT},
         title="Proximity to Historical Data Clusters",
         opacity=0.8,
     )
     fig.update_traces(marker=dict(size=5))
     fig.update_layout(
-        paper_bgcolor=CARD_BG,
-        plot_bgcolor=CARD_BG,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
         margin=dict(l=0, r=0, t=46, b=0),
         legend_title_text="Historical label",
+        font=dict(color="black"),
         scene=dict(
-            bgcolor=CARD_BG,
-            xaxis=dict(backgroundcolor=CARD_BG, gridcolor="#2c2c3a", zerolinecolor="#2c2c3a"),
-            yaxis=dict(backgroundcolor=CARD_BG, gridcolor="#2c2c3a", zerolinecolor="#2c2c3a"),
-            zaxis=dict(backgroundcolor=CARD_BG, gridcolor="#2c2c3a", zerolinecolor="#2c2c3a"),
+            bgcolor="white",
+            xaxis=dict(backgroundcolor="white", color="black", gridcolor="black", zerolinecolor="black"),
+            yaxis=dict(backgroundcolor="white", color="black", gridcolor="black", zerolinecolor="black"),
+            zaxis=dict(backgroundcolor="white", color="black", gridcolor="black", zerolinecolor="black"),
         ),
     )
     if star_coords is not None:
@@ -554,11 +554,10 @@ def main():
     st.sidebar.radio(
         "Tracks",
         [
-            "\U0001F9EC Track B ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Antibiotic Resistance",
-            "\U0001F9EA Track A ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Drug Toxicity",
-            "\U0001F9A0 Track C ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Epidemic Spread",
+            "\U0001F9EC Track B — Antibiotic Resistance",
+            "\U0001F9EA Track A — Drug Toxicity",
+            "\U0001F9A0 Track C — Epidemic Spread",
         ],
-        index=0,
         label_visibility="collapsed",
     )
 
@@ -575,7 +574,7 @@ def main():
     )
 
     prediction_payload = st.session_state.get("track_b_prediction_payload")
-    latency_display = "-"
+    latency_display = "--"
     if prediction_payload:
         latency_display = f"{prediction_payload['latency_ms']:.1f} ms"
 
@@ -708,6 +707,7 @@ def main():
         st.markdown('<div class="card">', unsafe_allow_html=True)
         figure = make_prediction_plot(projection_df, current_star)
         st.plotly_chart(figure, use_container_width=True, config={"displaylogo": False})
+        st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
         result_color = RESISTANT if prediction_label == "Resistant" else SUSCEPTIBLE
         if prediction_payload:
             state_class = "resistant" if prediction_label == "Resistant" else "susceptible"
@@ -757,88 +757,61 @@ def main():
 
     st.markdown('<div class="advisor-box">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">AI Clinical Advisor Box</div>', unsafe_allow_html=True)
-    advisor_left, advisor_right = st.columns([1.4, 1.0], gap="large")
+    st.markdown('<div class="advisor-card">', unsafe_allow_html=True)
+    if prediction_payload and st.button("Generate Clinical Interpretation", key="groq_advisor_btn"):
+        with st.spinner("Generating clinical interpretation..."):
+            advisor_text = call_groq_advisor(prediction_payload)
+            st.session_state["track_b_advisor_text"] = advisor_text
 
-    with advisor_left:
-        st.markdown('<div class="advisor-card">', unsafe_allow_html=True)
-        st.markdown('<div class="advisor-title">Claude interpretation</div>', unsafe_allow_html=True)
-        if prediction_payload:
-            if st.button("Generate Clinical Interpretation", key="groq_advisor_btn"):
-                with st.spinner("Generating clinical interpretation..."):
-                    advisor_text = call_groq_advisor(prediction_payload)
-                    st.session_state["track_b_advisor_text"] = advisor_text
-            advisor_text = st.session_state.get("track_b_advisor_text")
-            if advisor_text:
-                advisor_html = f"""
-<div style="background: linear-gradient(135deg, #1a1a2e, #16213e);
-             border: 1px solid #00d4ff;
-             border-left: 4px solid #00d4ff;
-             border-radius: 12px;
-             padding: 24px;
-             margin-top: 16px;">
-    <div style="color: #0a0a0f; line-height: 1.7; white-space: pre-wrap;">{html.escape(advisor_text)}</div>
-</div>
-"""
-                st.markdown(advisor_html, unsafe_allow_html=True)
-            else:
-                advisor_html = f"""
-<div style="background: linear-gradient(135deg, #1a1a2e, #16213e);
-             border: 1px solid #00d4ff;
-             border-left: 4px solid #00d4ff;
-             border-radius: 12px;
-             padding: 24px;
-             margin-top: 16px;">
-    <p style="color: #a0a0b0; font-style: italic;">
-        &#128300; Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
-    </p>
-</div>
-"""
-                st.markdown(advisor_html, unsafe_allow_html=True)
-        else:
-            advisor_html = f"""
-<div style="background: linear-gradient(135deg, #1a1a2e, #16213e);
-             border: 1px solid #00d4ff;
-             border-left: 4px solid #00d4ff;
-             border-radius: 12px;
-             padding: 24px;
-             margin-top: 16px;">
-    <p style="color: #a0a0b0; font-style: italic;">
-        &#128300; Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
-    </p>
-</div>
-"""
-            st.markdown(advisor_html, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    advisor_text = st.session_state.get("track_b_advisor_text", "")
+    if advisor_text:
+        interpretation_block = html.escape(advisor_text)
+    else:
+        interpretation_block = "Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations."
 
-    with advisor_right:
-        st.markdown('<div class="advisor-card">', unsafe_allow_html=True)
-        st.markdown('<div class="advisor-title">Key Drivers</div>', unsafe_allow_html=True)
-        if prediction_payload:
-            for item in local_top_features[:3]:
-                st.markdown(
-                    f'<span class="pill">{item["feature"]}: {item["value"]:+.4f}</span>',
-                    unsafe_allow_html=True,
-                )
-            st.markdown('<div style="height:10px"></div>', unsafe_allow_html=True)
-            st.markdown('<div class="advisor-title">Stewardship Recs</div>', unsafe_allow_html=True)
-            for rec in extract_stewardship_recs(prediction_label, resistant_probability, local_top_features):
-                st.markdown(f"- {rec}")
-            st.markdown('<div class="advisor-title" style="margin-top:14px;">Note on Uncertainty</div>', unsafe_allow_html=True)
-            st.markdown(
-                '<div class="small-note">Culture validation mandatory. Research grade output only. Clinical correlation required before deployment or treatment decisions.</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown('<div style="height:14px"></div>', unsafe_allow_html=True)
-            st.download_button(
-                "Download Structured Report (JSON)",
-                data=json.dumps(prediction_payload, indent=2),
-                file_name=f"{case_id or 'track_b_report'}.json",
-                mime="application/json",
-                use_container_width=True,
-            )
-        else:
-            st.write("No report yet. Predict first to unlock the structured summary.")
-        st.markdown("</div>", unsafe_allow_html=True)
+    key_drivers_html = ""
+    if prediction_payload and local_top_features:
+        key_drivers_html = "".join(
+            [
+                f"<li><strong>{html.escape(item['feature'])}</strong>: {item['value']:+.4f}</li>"
+                for item in local_top_features[:3]
+            ]
+        )
+    else:
+        key_drivers_html = "<li>Run a prediction to populate key drivers.</li>"
+
+    stewardship_recs = extract_stewardship_recs(prediction_label, resistant_probability, local_top_features) if prediction_payload else [
+        "Prediction is required before stewardship guidance can be generated.",
+        "Use microbiology validation before any treatment decision.",
+    ]
+    stewardship_html = "".join([f"<li>{html.escape(item)}</li>" for item in stewardship_recs[:2]])
+
+    advisor_html = f"""
+<div style="background: linear-gradient(135deg, #e8f4f8, #f0f8ff);
+             border: 2px solid #0066cc;
+             box-shadow: 4px 4px 0px #0066cc;
+             padding: 24px;
+             margin-top: 16px;">
+    <div style="font-weight: 800; margin-bottom: 10px; color: #0a0a0f;">&#128300; AI Clinical Interpretation</div>
+    <div style="color: {'#666666' if not advisor_text else '#0a0a0f'}; line-height: 1.7; white-space: pre-wrap; margin-bottom: 20px;">{interpretation_block}</div>
+    <div style="font-weight: 800; margin-bottom: 10px; color: #0a0a0f;">&#128202; Key Drivers</div>
+    <ul style="margin-top: 0; margin-bottom: 20px; color: #0a0a0f;">{key_drivers_html}</ul>
+    <div style="font-weight: 800; margin-bottom: 10px; color: #0a0a0f;">&#9877; Stewardship Recommendations</div>
+    <ul style="margin-top: 0; margin-bottom: 0; color: #0a0a0f;">{stewardship_html}</ul>
+</div>
+"""
+    st.markdown(advisor_html, unsafe_allow_html=True)
+
+    if prediction_payload:
+        st.markdown('<div style="height:14px;"></div>', unsafe_allow_html=True)
+        st.download_button(
+            "Download Structured Report (JSON)",
+            data=json.dumps(prediction_payload, indent=2),
+            file_name=f"{case_id or 'track_b_report'}.json",
+            mime="application/json",
+            use_container_width=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
