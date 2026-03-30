@@ -67,9 +67,9 @@ st.set_page_config(page_title="Horizon | Track B", layout="wide", page_icon="\U0
 
 CSS = f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
     html, body, [class*="css"]  {{
-        font-family: Inter, system-ui, sans-serif;
+        font-family: 'Inter', system-ui, sans-serif;
     }}
     .stApp {{
         background: {BACKGROUND};
@@ -540,7 +540,11 @@ def main():
     st.sidebar.caption("Track navigation")
     st.sidebar.radio(
         "Tracks",
-        ["ðŸ§¬ Track B â€” Antibiotic Resistance", "ðŸ§ª Track A â€” Drug Toxicity", "ðŸ¦  Track C â€” Epidemic Spread"],
+        [
+            "\U0001F9EC Track B â€” Antibiotic Resistance",
+            "\U0001F9EA Track A â€” Drug Toxicity",
+            "\U0001F9A0 Track C â€” Epidemic Spread",
+        ],
         index=0,
         label_visibility="collapsed",
     )
@@ -553,35 +557,51 @@ def main():
     st.markdown('<div class="hero-subtitle">Track B â€” Antibiotic Resistance Prediction</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="warning-banner">âš ï¸ Model trained on Mendeley AMR dataset. For research use only.</div>',
+        '<div class="warning-banner">&#9888; Model trained on Mendeley AMR dataset. For research use only.</div>',
         unsafe_allow_html=True,
     )
 
     prediction_payload = st.session_state.get("track_b_prediction_payload")
-    latency_display = "â€”"
+    latency_display = "-"
     if prediction_payload:
         latency_display = f"{prediction_payload['latency_ms']:.1f} ms"
 
     m1, m2, m3, m4 = st.columns(4, gap="small")
     with m1:
-        render_metric_card("ðŸ“ˆ", "Model AUC", "0.8540", "Validated on Mendeley-only stack")
+        render_metric_card("&#128202;", "Model AUC", "0.8540", "Validated on Mendeley-only stack")
     with m2:
-        render_metric_card("ðŸ§±", "Training Samples", "1,370", "Mendeley subset only")
+        render_metric_card("&#129514;", "Training Samples", "1,370", "Mendeley subset only")
     with m3:
-        render_metric_card("ðŸ§¬", "Model", "Mendeley Tuned Stack", "XGBoost + LightGBM + CatBoost")
+        render_metric_card("&#129516;", "Model", "Mendeley Tuned Stack", "XGBoost + LightGBM + CatBoost")
     with m4:
-        render_metric_card("â±ï¸", "Latency", latency_display, "Prediction path only")
+        render_metric_card("&#9889;", "Latency", latency_display, "Prediction path only")
 
     left_col, center_col, right_col = st.columns([1.1, 2.0, 1.35], gap="large")
 
-    species_options = sorted(mendeley_df["species"].dropna().astype(str).unique().tolist())
-    antibiotic_options = sorted(mendeley_df["antibiotic_name"].dropna().astype(str).unique().tolist())
-    class_options = sorted(mendeley_df["antibiotic_class"].dropna().astype(str).unique().tolist())
-    gender_options = sorted(mendeley_df["gender"].dropna().astype(str).unique().tolist())
-    site_options = sorted(mendeley_df["site"].dropna().astype(str).unique().tolist())
-    sample_type_options = sorted(mendeley_df["sample_type"].dropna().astype(str).unique().tolist())
-    yes_no_options = sorted(mendeley_df["Hospital_before"].dropna().astype(str).unique().tolist())
-    infection_options = sorted(mendeley_df["Infection_Freq"].dropna().astype(str).unique().tolist())
+    def get_unique_options(frame: pd.DataFrame, column: str, fallback: list[str] | None = None) -> list[str]:
+        if column in frame.columns:
+            values = (
+                frame[column]
+                .dropna()
+                .astype(str)
+                .map(str.strip)
+                .replace("", np.nan)
+                .dropna()
+                .unique()
+                .tolist()
+            )
+            if values:
+                return sorted(values)
+        return fallback or []
+
+    species_options = get_unique_options(unified_df, "species_clean", ["unknown_species"])
+    antibiotic_options = get_unique_options(unified_df, "antibiotic_name")
+    class_options = get_unique_options(unified_df, "antibiotic_class")
+    gender_options = ["M", "F"]
+    site_options = get_unique_options(unified_df, "site")
+    sample_type_options = get_unique_options(unified_df, "sample_type")
+    yes_no_options = ["Yes", "No"]
+    infection_options = ["Low", "Medium", "High"]
 
     with left_col:
         st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -755,7 +775,7 @@ def main():
              padding: 24px;
              margin-top: 16px;">
     <p style="color: #a0a0b0; font-style: italic;">
-        🔬 Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
+        &#128300; Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
     </p>
 </div>
 """
@@ -769,7 +789,7 @@ def main():
              padding: 24px;
              margin-top: 16px;">
     <p style="color: #a0a0b0; font-style: italic;">
-        🔬 Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
+        &#128300; Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.
     </p>
 </div>
 """
