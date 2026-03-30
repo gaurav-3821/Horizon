@@ -1,4 +1,4 @@
-﻿# RUN COMMAND: streamlit run flux.py
+# RUN COMMAND: streamlit run flux.py
 from __future__ import annotations
 
 import runpy
@@ -42,39 +42,73 @@ def inject_css():
             footer {{visibility: hidden;}}
             header {{visibility: hidden;}}
             [data-testid="stHeader"] {{display: none;}}
-            [data-testid="stSidebar"] {{
-                background: #eeeeea;
-                border-right: 2px solid {BORDER};
-                min-width: 320px !important;
-                max-width: 320px !important;
-            }}
-            [data-testid="stSidebar"] * {{
-                color: {TEXT};
-            }}
+            [data-testid="stSidebar"] {{display: none !important;}}
             .block-container {{
                 max-width: 1800px;
-                padding-top: 1.25rem;
+                padding-top: 1.0rem;
                 padding-bottom: 1.25rem;
             }}
-            div[role="radiogroup"] {{
-                gap: 0.45rem;
+            .hub-topbar {{
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 1rem;
             }}
-            div[role="radiogroup"] label {{
-                background: #ffffff !important;
-                color: {TEXT} !important;
+            .hub-title {{
+                font-size: 2rem;
+                font-weight: 800;
+                color: {TEXT};
+                line-height: 1.1;
+            }}
+            .hub-subtitle {{
+                color: {TEXT};
+                font-size: 0.95rem;
+                margin-top: 2px;
+            }}
+            .drawer-card {{
+                background: #ffffff;
+                border: 2px solid {BORDER};
+                box-shadow: 4px 4px 0px {BORDER};
+                padding: 18px;
+                margin-bottom: 1rem;
+            }}
+            .drawer-heading {{
+                font-size: 1rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                margin-bottom: 0.85rem;
+                color: {TEXT};
+            }}
+            .drawer-note {{
+                color: {TEXT};
+                font-size: 0.9rem;
+                line-height: 1.5;
+                margin-bottom: 1rem;
+            }}
+            .track-pill {{
+                display: inline-block;
+                margin-bottom: 0.75rem;
+                padding: 6px 10px;
+                border: 2px solid {ACCENT};
+                box-shadow: 3px 3px 0px {ACCENT};
+                font-weight: 700;
+                color: {TEXT};
+                background: #eef5ff;
+            }}
+            .stButton > button {{
+                background: #ffffff;
+                color: {TEXT};
                 border: 2px solid {BORDER} !important;
                 border-radius: 0px !important;
                 box-shadow: 4px 4px 0px {BORDER};
-                padding: 0.4rem 0.55rem !important;
-                margin-bottom: 0.25rem;
+                font-weight: 800;
             }}
-            div[role="radiogroup"] label:has(input:checked) {{
-                background: {ACCENT} !important;
-                box-shadow: 4px 4px 0px {ACCENT};
-            }}
-            div[role="radiogroup"] label span {{
-                color: inherit !important;
-                font-weight: 700 !important;
+            .stButton > button:hover {{
+                background: {ACCENT};
+                color: #ffffff;
+                box-shadow: 2px 2px 0px {BORDER};
+                transform: translate(2px, 2px);
             }}
         </style>
         """,
@@ -109,31 +143,68 @@ def run_track(track_name: str, script_path: Path):
         st.set_page_config = original_set_page_config
 
 
+def render_drawer():
+    st.markdown('<div class="drawer-card">', unsafe_allow_html=True)
+    st.markdown('<div class="drawer-heading">Tracks</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="track-pill">Current: {st.session_state["selected_track"]}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="drawer-note">Choose a track to switch between Antibiotic Resistance, Drug Toxicity, and Epidemic Spread modules.</div>',
+        unsafe_allow_html=True,
+    )
+
+    for track_name in TRACKS:
+        if st.button(track_name, use_container_width=True, key=f"nav_{track_name}"):
+            st.session_state["selected_track"] = track_name
+            st.session_state["nav_open"] = False
+            st.rerun()
+
+    if st.button("Close Navigation", use_container_width=True, key="nav_close"):
+        st.session_state["nav_open"] = False
+        st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def main():
-    st.set_page_config(page_title="Horizon", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="Horizon", layout="wide")
     inject_css()
 
     if "selected_track" not in st.session_state:
         st.session_state["selected_track"] = DEFAULT_TRACK
+    if "nav_open" not in st.session_state:
+        st.session_state["nav_open"] = False
 
-    st.sidebar.markdown(
-        """
-        <div style="font-size:1.55rem;font-weight:800;color:#0a0a0f;margin-bottom:0.1rem;">Horizon</div>
-        <div style="color:#0a0a0f;font-size:0.92rem;margin-bottom:1rem;">CodeCure AI Hackathon</div>
-        """,
-        unsafe_allow_html=True,
-    )
+    top_left, top_right = st.columns([0.18, 0.82], gap="small")
+    with top_left:
+        button_label = "Hide Tracks" if st.session_state["nav_open"] else "Show Tracks"
+        if st.button(button_label, use_container_width=True, key="toggle_drawer"):
+            st.session_state["nav_open"] = not st.session_state["nav_open"]
+            st.rerun()
+    with top_right:
+        st.markdown(
+            """
+            <div class="hub-topbar">
+                <div>
+                    <div class="hub-title">Horizon</div>
+                    <div class="hub-subtitle">CodeCure AI Hackathon</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    selected_track = st.sidebar.radio(
-        "Tracks",
-        options=list(TRACKS.keys()),
-        key="selected_track",
-        label_visibility="collapsed",
-    )
-
-    run_track(selected_track, TRACKS[selected_track])
+    if st.session_state["nav_open"]:
+        nav_col, main_col = st.columns([0.24, 0.76], gap="large")
+        with nav_col:
+            render_drawer()
+        with main_col:
+            run_track(st.session_state["selected_track"], TRACKS[st.session_state["selected_track"]])
+    else:
+        run_track(st.session_state["selected_track"], TRACKS[st.session_state["selected_track"]])
 
 
 if __name__ == "__main__":
     main()
-
