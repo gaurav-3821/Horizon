@@ -284,7 +284,7 @@ def make_radar_chart(title: str, labels: list[str], values: list[float], color: 
             radialaxis=dict(
                 visible=True,
                 range=[0, 1],
-                tickfont=dict(color=TEXT),
+                tickfont=dict(color="#000000", size=13),
                 gridcolor="#d9d9d9",
                 linecolor="#000000",
                 tickcolor="#000000",
@@ -481,12 +481,12 @@ def main():
                             sizeref=2.0 * risk_df["bubble_size"].max() / (40.0 ** 2),
                             sizemin=6,
                             color=color,
-                            opacity=0.8,
-                            line=dict(color="#000000", width=1.5),
+                            opacity=0.92,
+                            line=dict(color="#111111", width=2.0),
                         ),
                         text=subset["Country/Region"],
                         textposition="top center",
-                        textfont=dict(size=9, color=TEXT),
+                        textfont=dict(size=11, color="#000000"),
                         customdata=subset[["Country/Region", "confirmed", "rolling_7d", "risk_label"]].values,
                         hovertemplate=(
                             "<b>%{customdata[0]}</b><br>"
@@ -507,7 +507,7 @@ def main():
                     showgrid=True,
                     linecolor="#000000",
                     tickcolor="#000000",
-                    tickfont=dict(color=TEXT),
+                    tickfont=dict(color="#000000", size=13),
                 ),
                 yaxis=dict(
                     title="7-day Avg Daily New Cases",
@@ -516,7 +516,7 @@ def main():
                     showgrid=True,
                     linecolor="#000000",
                     tickcolor="#000000",
-                    tickfont=dict(color=TEXT),
+                    tickfont=dict(color="#000000", size=13),
                 ),
                 paper_bgcolor="#ffffff",
                 plot_bgcolor="#ffffff",
@@ -531,7 +531,7 @@ def main():
                 height=550,
                 title=dict(
                     text="Top 40 Countries — Confirmed Cases vs Current Spread",
-                    font=dict(color=TEXT, size=16),
+                    font=dict(color="#000000", size=18),
                 ),
             )
             st.plotly_chart(fig2, use_container_width=True)
