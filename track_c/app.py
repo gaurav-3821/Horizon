@@ -499,11 +499,13 @@ def main():
                 )
 
             fig2.update_layout(
+                font=dict(color="#000000", size=14, family="Inter, sans-serif"),
                 xaxis=dict(
                     title="Total Confirmed Cases (log scale)",
                     type="log",
-                    color=TEXT,
-                    gridcolor="#d9d9d9",
+                    color="#000000",
+                    title_font=dict(color="#000000", size=18, family="Inter, sans-serif"),
+                    gridcolor="#bfbfbf",
                     showgrid=True,
                     linecolor="#000000",
                     tickcolor="#000000",
@@ -511,8 +513,9 @@ def main():
                 ),
                 yaxis=dict(
                     title="7-day Avg Daily New Cases",
-                    color=TEXT,
-                    gridcolor="#d9d9d9",
+                    color="#000000",
+                    title_font=dict(color="#000000", size=18, family="Inter, sans-serif"),
+                    gridcolor="#bfbfbf",
                     showgrid=True,
                     linecolor="#000000",
                     tickcolor="#000000",
@@ -522,8 +525,9 @@ def main():
                 plot_bgcolor="#ffffff",
                 legend=dict(
                     title="Risk Level",
-                    font=dict(color=TEXT),
-                    bgcolor="rgba(255,255,255,0.9)",
+                    title_font=dict(color="#000000", size=16, family="Inter, sans-serif"),
+                    font=dict(color="#000000", size=15, family="Inter, sans-serif"),
+                    bgcolor="rgba(255,255,255,0.98)",
                     bordercolor="#000000",
                     borderwidth=1,
                 ),
