@@ -12,14 +12,13 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-ARTIFACTS_DIR = SCRIPT_DIR / "artifacts"
-MODELS_PATH = ARTIFACTS_DIR / "tabular_models.pkl"
-FEATURES_PATH = ARTIFACTS_DIR / "tabular_features.json"
-METRICS_PATH = ARTIFACTS_DIR / "tabular_metrics.json"
-SHAP_SUMMARY_PATH = ARTIFACTS_DIR / "shap_summary.png"
-TRAINING_RESULTS_PATH = ARTIFACTS_DIR / "training_results.png"
+TRACK_A_DIR = os.path.dirname(os.path.abspath(__file__))
+ARTIFACTS_DIR = os.path.join(TRACK_A_DIR, "artifacts")
+MODELS_PATH = os.path.join(ARTIFACTS_DIR, "tabular_models.pkl")
+FEATURES_PATH = os.path.join(ARTIFACTS_DIR, "tabular_features.json")
+METRICS_PATH = os.path.join(ARTIFACTS_DIR, "tabular_metrics.json")
+SHAP_SUMMARY_PATH = os.path.join(ARTIFACTS_DIR, "shap_summary.png")
+TRAINING_RESULTS_PATH = os.path.join(ARTIFACTS_DIR, "training_results.png")
 
 BACKGROUND = "#f5f5f0"
 CARD_BG = "#ffffff"
@@ -242,9 +241,9 @@ CSS = f"""
 
 @st.cache_resource
 def load_assets():
-    models = joblib.load(MODELS_PATH) if MODELS_PATH.exists() else {}
-    feature_names = json.loads(FEATURES_PATH.read_text(encoding="utf-8")) if FEATURES_PATH.exists() else []
-    metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8")) if METRICS_PATH.exists() else {}
+    models = joblib.load(MODELS_PATH) if os.path.exists(MODELS_PATH) else {}
+    feature_names = json.loads(Path(FEATURES_PATH).read_text(encoding="utf-8")) if os.path.exists(FEATURES_PATH) else []
+    metrics = json.loads(Path(METRICS_PATH).read_text(encoding="utf-8")) if os.path.exists(METRICS_PATH) else {}
     return models, feature_names, metrics
 
 
@@ -274,11 +273,11 @@ def build_feature_row(user_inputs: dict[str, float], feature_names: list[str]) -
     return pd.DataFrame([row], columns=feature_names)
 
 
-def image_html(path: Path) -> str:
-    if not path.exists():
+def image_html(path: str) -> str:
+    if not os.path.exists(path):
         return '<div class="small-note">Image not found.</div>'
-    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
-    return f'<img src="data:image/png;base64,{encoded}" alt="{path.name}"/>'
+    encoded = base64.b64encode(Path(path).read_bytes()).decode("ascii")
+    return f'<img src="data:image/png;base64,{encoded}" alt="{os.path.basename(path)}"/>'
 
 
 def main():
@@ -298,7 +297,6 @@ def main():
 
     try:
         models = load_models()
-        st.write("Models loaded:", list(models.keys()))
     except Exception as exc:
         models = {}
         st.error(f"Model load error: {exc}")
