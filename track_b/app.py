@@ -281,6 +281,13 @@ CSS = f"""
         box-shadow: 1px 1px 0px #000;
         transform: translate(2px, 2px);
     }}
+    .stDownloadButton > button:disabled {{
+        background: #e0e0e0 !important;
+        color: #4a4a4a !important;
+        border: 2px solid #000 !important;
+        box-shadow: 3px 3px 0px #666 !important;
+        opacity: 1 !important;
+    }}
     div[data-baseweb="select"] > div,
     div[data-baseweb="input"] > div,
     .stNumberInput div[data-baseweb="input"] > div {{
@@ -755,12 +762,16 @@ def main():
     with right_col:
         st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
-        st.markdown('<div class="advisor-box">', unsafe_allow_html=True)
-        st.markdown('<div class="advisor-title">Note on Uncertainty</div>', unsafe_allow_html=True)
         st.markdown(
-            '<div class="advisor-copy">Culture validation mandatory. Research-grade output only. Clinical correlation required before deployment or treatment decisions.</div>',
+            """
+            <div class="advisor-box">
+                <div class="advisor-title">Note on Uncertainty</div>
+                <div class="advisor-copy">Culture validation mandatory. Research-grade output only. Clinical correlation required before deployment or treatment decisions.</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
+        st.markdown('<div style="margin-top:10px;"></div>', unsafe_allow_html=True)
         if prediction_payload:
             report_json = json.dumps(prediction_payload, indent=2)
             st.download_button(
@@ -779,7 +790,6 @@ def main():
                 use_container_width=True,
                 disabled=True,
             )
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
