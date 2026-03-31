@@ -15,9 +15,9 @@ BORDER = "#000000"
 TEXT = "#0a0a0f"
 
 TRACKS = {
-    "Track B — Antibiotic Resistance": PROJECT_ROOT / "track_b" / "app.py",
-    "Track A — Drug Toxicity": PROJECT_ROOT / "track_a" / "app.py",
-    "Track C — Epidemic Spread": PROJECT_ROOT / "track_c" / "app.py",
+    "Track A ??? Drug Toxicity": PROJECT_ROOT / "track_a" / "app.py",
+    "Track B ??? Antibiotic Resistance": PROJECT_ROOT / "track_b" / "app.py",
+    "Track C ??? Epidemic Spread": PROJECT_ROOT / "track_c" / "app.py",
 }
 DEFAULT_TRACK = "Track B — Antibiotic Resistance"
 
