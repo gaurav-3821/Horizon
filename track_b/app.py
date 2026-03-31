@@ -3,6 +3,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 import json
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +13,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import requests
 import shap
 import streamlit as st
 from sklearn.decomposition import PCA
@@ -56,6 +58,93 @@ ACCENT = "#0066cc"
 RESISTANT = "#cc0000"
 SUSCEPTIBLE = "#006600"
 TEXT_MUTED = "#0a0a0f"
+
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct"
+
+
+def get_openrouter_api_key() -> str | None:
+    """Get OpenRouter API key from Streamlit secrets or environment variable."""
+    try:
+        return st.secrets["OPENROUTER_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        pass
+    return os.environ.get("OPENROUTER_API_KEY")
+
+
+def call_openrouter_api(prompt: str) -> str:
+    """Call OpenRouter API and return the response text."""
+    api_key = get_openrouter_api_key()
+    if not api_key:
+        raise ValueError("OpenRouter API key not configured. Set OPENROUTER_API_KEY in secrets or environment.")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://horizon.streamlit.app",
+        "X-Title": "Horizon Antibiotic Resistance",
+    }
+
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "provider": {"order": ["Groq"], "allow_fallbacks": True},
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+        "max_tokens": 2000,
+    }
+
+    response = requests.post(OPENROUTER_API_URL, json=payload, headers=headers, timeout=60)
+    response.raise_for_status()
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
+
+
+def build_clinical_prompt(
+    prediction_label: str,
+    confidence_pct: float,
+    resistant_prob: float,
+    species: str,
+    antibiotic_name: str,
+    antibiotic_class: str,
+    site: str,
+    sample_type: str,
+    age: int,
+    gender: str,
+    diabetes: str,
+    hypertension: str,
+    hospital_before: str,
+    top_features: list[dict],
+) -> str:
+    """Build the clinical interpretation prompt for OpenRouter."""
+    shap_features_str = ", ".join([f"{item['feature']}: {item['value']:+.4f}" for item in top_features[:5]])
+
+    prompt = f"""You are an expert clinical microbiologist and antibiotic stewardship specialist.
+
+A patient has been analyzed by an AI resistance prediction model with the following results:
+
+- Prediction: {prediction_label} ({confidence_pct:.1f}% confidence)
+- Resistant probability: {resistant_prob:.1f}%
+- Species: {species}
+- Antibiotic: {antibiotic_name}
+- Antibiotic class: {antibiotic_class}
+- Site of infection: {site}
+- Sample type: {sample_type}
+- Age: {age}, Gender: {gender}
+- Comorbidities: Diabetes={diabetes}, Hypertension={hypertension}
+- Hospital admission history: {hospital_before}
+- Top SHAP drivers: {shap_features_str}
+
+Provide a detailed clinical interpretation including:
+1. Clinical significance of this resistance prediction
+2. Likely resistance mechanisms based on species and antibiotic class
+3. Specific alternative antibiotic recommendations with dosing considerations
+4. Key stewardship recommendations
+5. Risk factors identified from patient profile
+6. Suggested confirmatory tests
+
+Be specific, clinical, and actionable. Use medical terminology appropriately."""
+
+    return prompt
 
 
 st.set_page_config(page_title="Horizon | Track B", layout="wide", page_icon="\U0001F9EC")
@@ -429,67 +518,69 @@ def render_local_shap_bars(top_features: list[dict]):
     st.markdown(html, unsafe_allow_html=True)
 
 
-def build_clinical_interpretation(
-    prediction_label: str,
-    confidence_pct: float | None,
-    resistant_probability: float | None,
-    top_features: list[dict],
-):
-    drivers = top_features[:3]
-    if prediction_label == "Resistant":
-        interpretation = (
-            f"The model estimates a resistant phenotype with {confidence_pct:.1f}% confidence. "
-            f"Estimated resistant probability is {resistant_probability:.1%}, so empiric coverage should be reviewed carefully."
-        )
-        recommendations = [
-            "Avoid relying on the current antibiotic in isolation until susceptibility data is confirmed.",
-            "Escalate stewardship review and reconcile the predicted risk with organism identity and source site.",
-        ]
-    else:
-        interpretation = (
-            f"The model estimates a susceptible phenotype with {confidence_pct:.1f}% confidence. "
-            f"Estimated resistant probability is {resistant_probability:.1%}, which supports lower resistance concern in this profile."
-        )
-        recommendations = [
-            "Use the prediction as supportive evidence only after correlating with culture and susceptibility testing.",
-            "Reassess once laboratory confirmation and patient response data become available.",
-        ]
-    return interpretation, drivers, recommendations
-
-
 def render_advisor_box(
     prediction_label: str | None,
     confidence_pct: float | None,
     resistant_probability: float | None,
     local_top_features: list[dict],
+    inputs: dict,
 ):
-    generated = st.session_state.get("track_b_advisor_generated", False)
+    """Render the Horizon Intelligence advisor box with OpenRouter API integration."""
     placeholder_html = """
     <div class="advisor-box">
         <div class="advisor-title">Horizon Intelligence</div>
         <div class="advisor-copy placeholder">Click 'Generate Clinical Interpretation' to get AI-powered antibiotic stewardship recommendations.</div>
     </div>
     """
+
     if not prediction_label or confidence_pct is None or resistant_probability is None:
         st.markdown(placeholder_html, unsafe_allow_html=True)
         return
-    if not generated:
+
+    generate_clicked = st.button("Generate Clinical Interpretation", use_container_width=True, key="gen_interpretation")
+
+    if generate_clicked:
+        prompt = build_clinical_prompt(
+            prediction_label=prediction_label,
+            confidence_pct=confidence_pct,
+            resistant_prob=resistant_probability * 100,
+            species=inputs.get("species", "Unknown"),
+            antibiotic_name=inputs.get("antibiotic_name", "Unknown"),
+            antibiotic_class=inputs.get("antibiotic_class", "Unknown"),
+            site=inputs.get("site", "Unknown"),
+            sample_type=inputs.get("sample_type", "Unknown"),
+            age=inputs.get("age", 0),
+            gender=inputs.get("gender", "Unknown"),
+            diabetes=inputs.get("Diabetes", "No"),
+            hypertension=inputs.get("Hypertension", "No"),
+            hospital_before=inputs.get("Hospital_before", "No"),
+            top_features=local_top_features,
+        )
+
+        with st.spinner("Generating clinical interpretation..."):
+            try:
+                api_response = call_openrouter_api(prompt)
+                st.session_state["track_b_clinical_response"] = api_response
+                st.session_state["track_b_advisor_generated"] = True
+            except Exception as e:
+                st.error(f"Clinical interpretation unavailable. Please try again. Error: {str(e)}")
+                st.session_state["track_b_advisor_generated"] = False
+        st.rerun()
+
+    generated = st.session_state.get("track_b_advisor_generated", False)
+    api_response = st.session_state.get("track_b_clinical_response", "")
+
+    if not generated or not api_response:
         st.markdown(placeholder_html, unsafe_allow_html=True)
         return
 
-    interpretation, drivers, recommendations = build_clinical_interpretation(
-        prediction_label, confidence_pct, resistant_probability, local_top_features
-    )
-    driver_items = "".join([f"<li>{item['feature']}: {item['value']:+.4f}</li>" for item in drivers])
-    rec_items = "".join([f"<li>{item}</li>" for item in recommendations])
+    driver_items = "".join([f"<li>{item['feature']}: {item['value']:+.4f}</li>" for item in local_top_features[:3]])
     advisor_html = f"""
     <div class="advisor-box">
         <div class="advisor-title">Horizon Intelligence</div>
-        <div class="advisor-copy">{interpretation}</div>
-        <div class="advisor-title">Key Drivers</div>
+        <div class="advisor-copy">{api_response}</div>
+        <div class="advisor-title" style="margin-top: 16px;">Top SHAP Drivers</div>
         <ul class="advisor-list">{driver_items}</ul>
-        <div class="advisor-title">Stewardship Recommendations</div>
-        <ul class="advisor-list">{rec_items}</ul>
     </div>
     """
     st.markdown(advisor_html, unsafe_allow_html=True)
@@ -708,6 +799,7 @@ def main():
             "pca_coords": [float(value) for value in current_star],
         }
         st.session_state["track_b_advisor_generated"] = False
+        st.session_state["track_b_clinical_response"] = ""
         st.session_state["track_b_prediction_payload"] = report_dict
         prediction_payload = report_dict
         st.rerun()
@@ -748,11 +840,20 @@ def main():
             st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
             st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
             render_local_shap_bars(local_top_features[:5])
-            generate_clicked = st.button("Generate Clinical Interpretation", use_container_width=True)
-            if generate_clicked:
-                st.session_state["track_b_advisor_generated"] = True
-                st.rerun()
-            render_advisor_box(prediction_label, confidence_pct, resistant_probability, local_top_features)
+
+            current_inputs = {
+                "species": species,
+                "antibiotic_name": antibiotic_name,
+                "antibiotic_class": antibiotic_class,
+                "site": site,
+                "sample_type": sample_type,
+                "age": age,
+                "gender": gender,
+                "Diabetes": diabetes,
+                "Hypertension": hypertension,
+                "Hospital_before": hospital_before,
+            }
+            render_advisor_box(prediction_label, confidence_pct, resistant_probability, local_top_features, current_inputs)
         else:
             st.markdown(
                 '<div class="prediction-sub">Run a prediction to place the current patient inside the historical cluster map.</div>',
