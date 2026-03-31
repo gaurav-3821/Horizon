@@ -371,7 +371,7 @@ def main():
                 bubble_df["risk_label"].notna(), "Unknown"
             )
             bubble_df["bubble_size"] = bubble_df["rolling_7d"].fillna(0).clip(lower=0)
-            color_map = {"Low": "#006600", "Medium": "#b36b00", "High": "#cc0000", "Unknown": "#666666"}
+            color_map = {"Low": "#16a34a", "Medium": "#f4b400", "High": "#dc2626", "Unknown": "#666666"}
 
             fig = px.scatter(
                 bubble_df,
@@ -380,6 +380,7 @@ def main():
                 size="bubble_size",
                 color="risk_level",
                 color_discrete_map=color_map,
+                category_orders={"risk_level": ["Low", "Medium", "High", "Unknown"]},
                 hover_data={
                     "Country/Region": True,
                     "date": True,
@@ -396,9 +397,10 @@ def main():
                     "Country/Region": "Country",
                 },
                 template="plotly_white",
+                size_max=34,
             )
             fig.update_traces(
-                marker=dict(line=dict(color="#000000", width=0.8), opacity=0.75),
+                marker=dict(line=dict(color="#111111", width=1.2), opacity=0.88),
                 hovertemplate=(
                     "Country: %{customdata[0]}<br>"
                     "Date: %{x|%d %b %Y}<br>"
@@ -410,15 +412,31 @@ def main():
             fig.update_layout(
                 paper_bgcolor="#ffffff",
                 plot_bgcolor="#ffffff",
-                font=dict(color=TEXT),
-                xaxis=dict(title="Date", color=TEXT, gridcolor="#d9d9d9"),
-                yaxis=dict(title="Daily new cases", color=TEXT, gridcolor="#d9d9d9"),
+                font=dict(color=TEXT, size=14),
+                hoverlabel=dict(bgcolor="#ffffff", font=dict(color="#000000", size=13)),
+                xaxis=dict(
+                    title="Date",
+                    color="#000000",
+                    title_font=dict(color="#000000", size=16),
+                    tickfont=dict(color="#000000", size=13),
+                    gridcolor="#cfcfcf",
+                ),
+                yaxis=dict(
+                    title="Daily new cases",
+                    color="#000000",
+                    title_font=dict(color="#000000", size=16),
+                    tickfont=dict(color="#000000", size=13),
+                    gridcolor="#cfcfcf",
+                ),
                 legend=dict(
                     title="Risk level",
-                    font=dict(color=TEXT),
-                    bgcolor="#ffffff",
+                    title_font=dict(color="#000000", size=15),
+                    font=dict(color="#000000", size=14),
+                    bgcolor="rgba(255,255,255,0.95)",
                     bordercolor="#000000",
                     borderwidth=1,
+                    x=1.02,
+                    y=0.98,
                 ),
                 margin=dict(l=20, r=20, t=20, b=20),
             )
