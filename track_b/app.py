@@ -755,10 +755,13 @@ def main():
     with right_col:
         st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
         st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
-        st.markdown('<div class="advisor-box">', unsafe_allow_html=True)
-        st.markdown('<div class="advisor-title">Note on Uncertainty</div>', unsafe_allow_html=True)
         st.markdown(
-            '<div class="advisor-copy">Culture validation mandatory. Research-grade output only. Clinical correlation required before deployment or treatment decisions.</div>',
+            """
+            <div class="advisor-box">
+                <div class="advisor-title">Note on Uncertainty</div>
+                <div class="advisor-copy">Culture validation mandatory. Research-grade output only. Clinical correlation required before deployment or treatment decisions.</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
         if prediction_payload:
@@ -779,7 +782,6 @@ def main():
                 use_container_width=True,
                 disabled=True,
             )
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
