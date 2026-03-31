@@ -284,7 +284,7 @@ def make_radar_chart(title: str, labels: list[str], values: list[float], color: 
             radialaxis=dict(
                 visible=True,
                 range=[0, 1],
-                tickfont=dict(color="#000000", size=13),
+                tickfont=dict(color="#000000", size=14),
                 gridcolor="#d9d9d9",
                 linecolor="#000000",
                 tickcolor="#000000",
@@ -418,14 +418,14 @@ def main():
                     title="Date",
                     color="#000000",
                     title_font=dict(color="#000000", size=16),
-                    tickfont=dict(color="#000000", size=13),
+                    tickfont=dict(color="#000000", size=14),
                     gridcolor="#cfcfcf",
                 ),
                 yaxis=dict(
                     title="Daily new cases",
                     color="#000000",
                     title_font=dict(color="#000000", size=16),
-                    tickfont=dict(color="#000000", size=13),
+                    tickfont=dict(color="#000000", size=14),
                     gridcolor="#cfcfcf",
                 ),
                 legend=dict(
@@ -486,7 +486,7 @@ def main():
                         ),
                         text=subset["Country/Region"],
                         textposition="top center",
-                        textfont=dict(size=11, color="#000000"),
+                        textfont=dict(size=12, color="#000000", family="Inter, sans-serif"),
                         customdata=subset[["Country/Region", "confirmed", "rolling_7d", "risk_label"]].values,
                         hovertemplate=(
                             "<b>%{customdata[0]}</b><br>"
@@ -507,7 +507,7 @@ def main():
                     showgrid=True,
                     linecolor="#000000",
                     tickcolor="#000000",
-                    tickfont=dict(color="#000000", size=13),
+                    tickfont=dict(color="#000000", size=14),
                 ),
                 yaxis=dict(
                     title="7-day Avg Daily New Cases",
@@ -516,7 +516,7 @@ def main():
                     showgrid=True,
                     linecolor="#000000",
                     tickcolor="#000000",
-                    tickfont=dict(color="#000000", size=13),
+                    tickfont=dict(color="#000000", size=14),
                 ),
                 paper_bgcolor="#ffffff",
                 plot_bgcolor="#ffffff",
@@ -531,7 +531,7 @@ def main():
                 height=550,
                 title=dict(
                     text="Top 40 Countries — Confirmed Cases vs Current Spread",
-                    font=dict(color="#000000", size=18),
+                    font=dict(color="#000000", size=20),
                 ),
             )
             st.plotly_chart(fig2, use_container_width=True)
