@@ -162,6 +162,9 @@ CSS = f"""
         width: 100%;
         display: block;
     }}
+    .section-title.centered {{
+        text-align: center !important;
+    }}
     .small-note {{
         color: {TEXT};
         font-size: 0.92rem;
@@ -344,7 +347,7 @@ def main():
             )
 
     with right_col:
-        st.markdown('<div class="section-title" style="text-align:left;">Endpoint Predictions</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title centered">Endpoint Predictions</div>', unsafe_allow_html=True)
         if not models or not feature_names:
             st.info("Tabular model artifacts are not present in this cloud deployment yet.")
         elif predict_clicked:
