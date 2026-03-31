@@ -367,7 +367,9 @@ def main():
             cdf = df[df["Country/Region"] == country].sort_values("date")
 
             bubble_df = cdf.copy()
-            bubble_df["risk_level"] = bubble_df["risk_label"].fillna("Unknown")
+            bubble_df["risk_level"] = bubble_df["risk_label"].astype("object").where(
+                bubble_df["risk_label"].notna(), "Unknown"
+            )
             bubble_df["bubble_size"] = bubble_df["rolling_7d"].fillna(0).clip(lower=0)
             color_map = {"Low": "#006600", "Medium": "#b36b00", "High": "#cc0000", "Unknown": "#666666"}
 
