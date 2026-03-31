@@ -9,6 +9,7 @@ import joblib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -365,26 +366,61 @@ def main():
             )
             cdf = df[df["Country/Region"] == country].sort_values("date")
 
-            fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-            axes[0].plot(cdf["date"], cdf["confirmed"], color="#0066cc", linewidth=1.8)
-            axes[0].set_title(f"Cumulative confirmed — {country}", color=TEXT)
-            axes[0].set_ylabel("Total cases", color=TEXT)
-            axes[0].tick_params(colors=TEXT)
+            bubble_df = cdf.copy()
+            bubble_df["risk_level"] = bubble_df["risk_label"].fillna("Unknown")
+            bubble_df["bubble_size"] = bubble_df["rolling_7d"].fillna(0).clip(lower=0)
+            color_map = {"Low": "#006600", "Medium": "#b36b00", "High": "#cc0000", "Unknown": "#666666"}
 
-            axes[1].bar(cdf["date"], cdf["daily_new"], color="#cc0000", alpha=0.65, width=1, label="Daily new")
-            axes[1].plot(cdf["date"], cdf["rolling_7d"], color="#006600", linewidth=2, label="7-day avg")
-            axes[1].set_title("Daily new cases", color=TEXT)
-            axes[1].set_ylabel("Cases", color=TEXT)
-            axes[1].tick_params(colors=TEXT)
-            axes[1].legend()
-
-            for ax in axes:
-                ax.set_facecolor("#ffffff")
-                ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
-                ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-            plt.xticks(rotation=30)
-            plt.tight_layout()
-            st.pyplot(fig)
+            fig = px.scatter(
+                bubble_df,
+                x="date",
+                y="daily_new",
+                size="bubble_size",
+                color="risk_level",
+                color_discrete_map=color_map,
+                hover_data={
+                    "Country/Region": True,
+                    "date": True,
+                    "daily_new": ":,.0f",
+                    "rolling_7d": ":,.2f",
+                    "risk_level": True,
+                    "bubble_size": False,
+                },
+                labels={
+                    "date": "Date",
+                    "daily_new": "Daily new cases",
+                    "rolling_7d": "7-day average cases",
+                    "risk_level": "Risk level",
+                    "Country/Region": "Country",
+                },
+                template="plotly_white",
+            )
+            fig.update_traces(
+                marker=dict(line=dict(color="#000000", width=0.8), opacity=0.75),
+                hovertemplate=(
+                    "Country: %{customdata[0]}<br>"
+                    "Date: %{x|%d %b %Y}<br>"
+                    "Daily new cases: %{y:,.0f}<br>"
+                    "7-day average: %{customdata[2]:,.2f}<br>"
+                    "Risk level: %{customdata[3]}<extra></extra>"
+                ),
+            )
+            fig.update_layout(
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
+                font=dict(color=TEXT),
+                xaxis=dict(title="Date", color=TEXT, gridcolor="#d9d9d9"),
+                yaxis=dict(title="Daily new cases", color=TEXT, gridcolor="#d9d9d9"),
+                legend=dict(
+                    title="Risk level",
+                    font=dict(color=TEXT),
+                    bgcolor="#ffffff",
+                    bordercolor="#000000",
+                    borderwidth=1,
+                ),
+                margin=dict(l=20, r=20, t=20, b=20),
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
 
             st.markdown('<div class="section-title">Risk level over time</div>', unsafe_allow_html=True)
             risk_counts = cdf["risk_label"].value_counts()
@@ -402,19 +438,83 @@ def main():
             latest = df.groupby("Country/Region").last().reset_index()
             risk_df = latest[["Country/Region", "rolling_7d", "risk_label", "confirmed"]].copy()
             risk_df = risk_df.sort_values("rolling_7d", ascending=False).head(40)
+            risk_df["log_confirmed"] = risk_df["confirmed"].apply(lambda x: max(x, 1))
+            risk_df["bubble_size"] = risk_df["rolling_7d"].clip(lower=0.1)
 
-            fig2, ax2 = plt.subplots(figsize=(10, 8))
-            colors = [
-                {"Low": "#006600", "Medium": "#b36b00", "High": "#cc0000"}.get(str(r), "#666666")
-                for r in risk_df["risk_label"]
-            ]
-            ax2.barh(risk_df["Country/Region"], risk_df["rolling_7d"], color=colors)
-            ax2.set_xlabel("7-day avg daily new cases", color=TEXT)
-            ax2.set_title("Top 40 countries by recent case load", color=TEXT)
-            ax2.tick_params(colors=TEXT)
-            ax2.invert_yaxis()
-            plt.tight_layout()
-            st.pyplot(fig2)
+            color_map = {"Low": "#006600", "Medium": "#b36b00", "High": "#cc0000"}
+            risk_df["color"] = risk_df["risk_label"].map(lambda r: color_map.get(str(r), "#666666"))
+
+            fig2 = go.Figure()
+            for risk_level, color in color_map.items():
+                subset = risk_df[risk_df["risk_label"] == risk_level]
+                if subset.empty:
+                    continue
+                fig2.add_trace(
+                    go.Scatter(
+                        x=subset["log_confirmed"],
+                        y=subset["rolling_7d"],
+                        mode="markers+text",
+                        name=risk_level,
+                        marker=dict(
+                            size=subset["bubble_size"],
+                            sizemode="area",
+                            sizeref=2.0 * risk_df["bubble_size"].max() / (40.0 ** 2),
+                            sizemin=6,
+                            color=color,
+                            opacity=0.8,
+                            line=dict(color="#000000", width=1.5),
+                        ),
+                        text=subset["Country/Region"],
+                        textposition="top center",
+                        textfont=dict(size=9, color=TEXT),
+                        customdata=subset[["Country/Region", "confirmed", "rolling_7d", "risk_label"]].values,
+                        hovertemplate=(
+                            "<b>%{customdata[0]}</b><br>"
+                            "Total Cases: %{customdata[1]:,.0f}<br>"
+                            "7-day Avg: %{customdata[2]:,.0f}<br>"
+                            "Risk: %{customdata[3]}"
+                            "<extra></extra>"
+                        ),
+                    )
+                )
+
+            fig2.update_layout(
+                xaxis=dict(
+                    title="Total Confirmed Cases (log scale)",
+                    type="log",
+                    color=TEXT,
+                    gridcolor="#d9d9d9",
+                    showgrid=True,
+                    linecolor="#000000",
+                    tickcolor="#000000",
+                    tickfont=dict(color=TEXT),
+                ),
+                yaxis=dict(
+                    title="7-day Avg Daily New Cases",
+                    color=TEXT,
+                    gridcolor="#d9d9d9",
+                    showgrid=True,
+                    linecolor="#000000",
+                    tickcolor="#000000",
+                    tickfont=dict(color=TEXT),
+                ),
+                paper_bgcolor="#ffffff",
+                plot_bgcolor="#ffffff",
+                legend=dict(
+                    title="Risk Level",
+                    font=dict(color=TEXT),
+                    bgcolor="rgba(255,255,255,0.9)",
+                    bordercolor="#000000",
+                    borderwidth=1,
+                ),
+                margin=dict(l=60, r=40, t=60, b=60),
+                height=550,
+                title=dict(
+                    text="Top 40 Countries — Confirmed Cases vs Current Spread",
+                    font=dict(color=TEXT, size=16),
+                ),
+            )
+            st.plotly_chart(fig2, use_container_width=True)
         else:
             st.info("No Track C data available.")
 
