@@ -248,6 +248,11 @@ def load_assets():
     return models, feature_names, metrics
 
 
+def load_models():
+    models, _, _ = load_assets()
+    return models
+
+
 def render_metric_card(icon: str, label: str, value: str, subtext: str = ""):
     st.markdown(
         f"""
@@ -291,7 +296,14 @@ def main():
         label_visibility="collapsed",
     )
 
-    models, feature_names, metrics = load_assets()
+    try:
+        models = load_models()
+        st.write("Models loaded:", list(models.keys()))
+    except Exception as exc:
+        models = {}
+        st.error(f"Model load error: {exc}")
+
+    _, feature_names, metrics = load_assets()
 
     st.markdown('<div class="hero-title">Drug Toxicity Prediction</div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-subtitle">Track A — Tox21 Molecular Analysis</div>', unsafe_allow_html=True)
@@ -367,24 +379,32 @@ def main():
         if not models or not feature_names:
             st.info("Tabular model artifacts are not present in this cloud deployment yet.")
         elif predict_clicked:
-            row = build_feature_row(user_inputs, feature_names)
-            results_rows = []
-            for endpoint in TARGET_COLS:
-                model = models.get(endpoint)
-                if model is None:
-                    continue
-                prob = float(model.predict_proba(row)[:, 1][0])
-                label = "Toxic" if prob >= 0.5 else "Safe"
-                label_class = "toxic" if label == "Toxic" else "safe"
-                results_rows.append(
-                    {
-                        "Endpoint": endpoint,
-                        "Risk": f'<span class="result-pill {label_class}">{label.upper()}</span>',
-                        "Probability": f"{prob:.3f}",
-                    }
-                )
-            result_df = pd.DataFrame(results_rows)
-            st.markdown(result_df.to_html(index=False, escape=False), unsafe_allow_html=True)
+            try:
+                st.write("Predicting...")
+                row = build_feature_row(user_inputs, feature_names)
+                morgan_cols = [name for name in feature_names if str(name).startswith("morgan_fp")]
+                st.write("Input vector shape:", row.shape)
+                st.write("Morgan FP columns included:", len(morgan_cols))
+                results_rows = []
+                for endpoint in TARGET_COLS:
+                    model = models.get(endpoint)
+                    if model is None:
+                        continue
+                    prob = float(model.predict_proba(row)[:, 1][0])
+                    label = "Toxic" if prob >= 0.5 else "Safe"
+                    label_class = "toxic" if label == "Toxic" else "safe"
+                    results_rows.append(
+                        {
+                            "Endpoint": endpoint,
+                            "Risk": f'<span class="result-pill {label_class}">{label.upper()}</span>',
+                            "Probability": f"{prob:.3f}",
+                        }
+                    )
+                st.write("Endpoints predicted:", len(results_rows))
+                result_df = pd.DataFrame(results_rows)
+                st.markdown(result_df.to_html(index=False, escape=False), unsafe_allow_html=True)
+            except Exception as exc:
+                st.error(f"Prediction error: {exc}")
         else:
             st.markdown(
                 '<div class="small-note">Enter descriptor values and click the prediction button to score all 12 toxicity endpoints.</div>',
