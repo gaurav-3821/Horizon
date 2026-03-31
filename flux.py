@@ -65,13 +65,6 @@ def inject_css():
                 font-size: 0.95rem;
                 margin-top: 2px;
             }}
-            .drawer-card {{
-                background: #ffffff;
-                border: 2px solid {BORDER};
-                box-shadow: 4px 4px 0px {BORDER};
-                padding: 18px;
-                margin-bottom: 1rem;
-            }}
             .drawer-heading {{
                 font-size: 1rem;
                 font-weight: 800;
@@ -79,43 +72,6 @@ def inject_css():
                 letter-spacing: 0.08em;
                 margin-bottom: 0.85rem;
                 color: {TEXT};
-            }}
-            .drawer-note {{
-                color: {TEXT};
-                font-size: 0.9rem;
-                line-height: 1.5;
-                margin-bottom: 1rem;
-            }}
-            .status-card {{
-                background: #ffffff;
-                border: 2px solid {BORDER};
-                box-shadow: 4px 4px 0px {BORDER};
-                padding: 14px 16px;
-                margin-bottom: 1rem;
-            }}
-            .status-title {{
-                font-size: 0.9rem;
-                font-weight: 800;
-                text-transform: uppercase;
-                letter-spacing: 0.08em;
-                color: {TEXT};
-                margin-bottom: 0.5rem;
-            }}
-            .status-line {{
-                color: {TEXT};
-                font-size: 0.88rem;
-                line-height: 1.5;
-                margin-bottom: 0.3rem;
-            }}
-            .track-pill {{
-                display: inline-block;
-                margin-bottom: 0.75rem;
-                padding: 6px 10px;
-                border: 2px solid {ACCENT};
-                box-shadow: 3px 3px 0px {ACCENT};
-                font-weight: 700;
-                color: {TEXT};
-                background: #eef5ff;
             }}
             .stButton > button {{
                 background: #ffffff;
@@ -165,45 +121,11 @@ def run_track(track_name: str, script_path: Path):
 
 
 def render_drawer():
-    button_label = "Hide Tracks" if st.session_state["nav_open"] else "Show Tracks"
-    if st.button(button_label, use_container_width=True, key="toggle_drawer"):
-        st.session_state["nav_open"] = not st.session_state["nav_open"]
-        st.rerun()
-
-    st.markdown(
-        """
-        <div class="status-card">
-            <div class="status-title">Prototype Status</div>
-            <div class="status-line">Track B is the flagship live demo.</div>
-            <div class="status-line">Track A is rebuilding on tabular-only models.</div>
-            <div class="status-line">Track C covers epidemic forecasting.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if not st.session_state["nav_open"]:
-        return
-
     st.markdown('<div class="drawer-heading">Tracks</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="track-pill">Current: {st.session_state["selected_track"]}</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="drawer-note">Choose a track to switch between Antibiotic Resistance, Drug Toxicity, and Epidemic Spread modules.</div>',
-        unsafe_allow_html=True,
-    )
-
     for track_name in TRACKS:
         if st.button(track_name, use_container_width=True, key=f"nav_{track_name}"):
             st.session_state["selected_track"] = track_name
-            st.session_state["nav_open"] = False
             st.rerun()
-
-    if st.button("Close Navigation", use_container_width=True, key="nav_close"):
-        st.session_state["nav_open"] = False
-        st.rerun()
 
 
 def main():
@@ -212,8 +134,6 @@ def main():
 
     if "selected_track" not in st.session_state:
         st.session_state["selected_track"] = DEFAULT_TRACK
-    if "nav_open" not in st.session_state:
-        st.session_state["nav_open"] = False
 
     nav_col, main_col = st.columns([0.24, 0.76], gap="large")
     with nav_col:

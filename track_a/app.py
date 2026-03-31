@@ -151,14 +151,6 @@ CSS = f"""
         font-size: 0.82rem;
         margin-top: 6px;
     }}
-    .summary-card {{
-        background: {CARD_BG};
-        border: 2px solid {ACCENT};
-        padding: 20px 22px;
-        box-shadow: 4px 4px 0px {ACCENT};
-        margin-top: 1.1rem;
-        margin-bottom: 1.15rem;
-    }}
     .section-title {{
         font-size: 1.02rem;
         font-weight: 800;
@@ -171,12 +163,6 @@ CSS = f"""
         color: {TEXT};
         font-size: 0.92rem;
         line-height: 1.6;
-    }}
-    .summary-line {{
-        color: {TEXT};
-        font-size: 0.98rem;
-        line-height: 1.7;
-        margin-bottom: 0.7rem;
     }}
     .result-pill {{
         display: inline-block;
@@ -319,18 +305,6 @@ def main():
     with m3:
         render_metric_card("&#128200;", "Endpoints", "12", "Binary toxicity classifiers")
 
-    st.markdown(
-        """
-        <div class="summary-card">
-            <div class="section-title">Track Summary</div>
-            <div class="summary-line">This deployment view uses a tabular-only XGBoost pipeline built from precomputed Tox21 molecular descriptors and Morgan fingerprint features.</div>
-            <div class="summary-line">The model scores 12 toxicity endpoints without requiring rdkit, torch, or torch-geometric at runtime.</div>
-            <div class="summary-line">The original hybrid GNN research pipeline remains part of the repository, but the cloud app presents the lighter deployment-safe path.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
     left_col, right_col = st.columns([1.0, 1.3], gap="large")
 
     with left_col:
@@ -354,12 +328,6 @@ def main():
             '<div class="small-note" style="margin-top:12px; margin-bottom:18px;">Inputs are tabular physicochemical descriptors only. Fingerprint-derived columns remain zero-filled in the cloud interface.</div>',
             unsafe_allow_html=True,
         )
-
-        st.markdown('<div class="section-title">Deployment Notes</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="small-note">This Track A page is aligned to the deployment-safe tabular workflow. It loads precomputed features and scores one XGBoost classifier per endpoint.</div>',
-            unsafe_allow_html=True,
-        )
         if metrics:
             avg_auc = np.mean([v["mean_auc"] for v in metrics.values() if v.get("mean_auc") is not None])
             st.markdown(
@@ -378,11 +346,7 @@ def main():
             st.info("Tabular model artifacts are not present in this cloud deployment yet.")
         elif predict_clicked:
             try:
-                st.write("Predicting...")
                 row = build_feature_row(user_inputs, feature_names)
-                morgan_cols = [name for name in feature_names if str(name).startswith("morgan_fp")]
-                st.write("Input vector shape:", row.shape)
-                st.write("Morgan FP columns included:", len(morgan_cols))
                 results_rows = []
                 for endpoint in TARGET_COLS:
                     model = models.get(endpoint)
@@ -398,7 +362,6 @@ def main():
                             "Probability": f"{prob:.3f}",
                         }
                     )
-                st.write("Endpoints predicted:", len(results_rows))
                 result_df = pd.DataFrame(results_rows)
                 st.markdown(result_df.to_html(index=False, escape=False), unsafe_allow_html=True)
             except Exception as exc:
