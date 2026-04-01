@@ -104,6 +104,11 @@ def inject_css():
                 box-shadow: 0px 0px 0px rgba(0,0,0,1) !important;
                 transform: translate(0px, 0px);
             }}
+            .stButton > button[kind="primary"] {{
+                background-color: #FFE45E !important;
+                box-shadow: 3px 3px 0px rgba(0,0,0,1) !important;
+                transform: translate(-1.5px, -1.5px);
+            }}
 
             /* Selectbox styling */
             div[data-baseweb="select"] > div {{
@@ -199,7 +204,9 @@ def render_top_nav():
             )
         for i, track_name in enumerate(track_list):
             with cols[i + 1]:
-                if st.button(track_name, use_container_width=True, key=f"nav_{track_name}"):
+                is_selected = (st.session_state.get("selected_track") == track_name)
+                btn_type = "primary" if is_selected else "secondary"
+                if st.button(track_name, use_container_width=True, key=f"nav_{track_name}", type=btn_type):
                     st.session_state["selected_track"] = track_name
                     st.rerun()
 
