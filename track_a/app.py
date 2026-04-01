@@ -1,4 +1,4 @@
-﻿# RUN COMMAND: streamlit run track_a/app.py
+# RUN COMMAND: streamlit run track_a/app.py
 import sys
 import os
 import base64
@@ -126,9 +126,15 @@ CSS = f"""
     .metric-card {{
         background: {CARD_BG};
         border: 2px solid {BORDER};
+        border-radius: 6px !important;
         padding: 18px 20px;
         min-height: 122px;
-        box-shadow: 4px 4px 0px {BORDER};
+        transition: all 0.2s ease-in-out;
+        box-shadow: none;
+    }}
+    .metric-card:hover {{
+        box-shadow: 8px 8px 0px {BORDER};
+        transform: translate(-3px, -3px);
     }}
     .metric-icon {{
         font-size: 1.25rem;
@@ -157,6 +163,7 @@ CSS = f"""
         text-transform: uppercase;
         letter-spacing: 0.1em;
         color: {TEXT};
+        margin-top: 1.5rem;
         margin-bottom: 0.9rem;
         text-align: left;
         width: 100%;
@@ -188,9 +195,15 @@ CSS = f"""
     .img-card {{
         background: {CARD_BG};
         border: 2px solid {ACCENT};
+        border-radius: 6px !important;
         padding: 18px 18px 12px 18px;
-        box-shadow: 4px 4px 0px {ACCENT};
+        box-shadow: none;
+        transition: all 0.2s ease-in-out;
         margin-top: 1rem;
+    }}
+    .img-card:hover {{
+        box-shadow: 8px 8px 0px {ACCENT};
+        transform: translate(-3px, -3px);
     }}
     .img-card img {{
         width: 100%;
@@ -212,20 +225,20 @@ CSS = f"""
         color: {TEXT} !important;
         font-weight: 600 !important;
     }}
-    table {{
+    table, .dataframe {{
         width: 100%;
-        border-collapse: collapse;
-        background: {CARD_BG};
+        border-collapse: collapse !important;
+        background: {CARD_BG} !important;
     }}
-    th, td {{
-        border: 2px solid {BORDER};
-        padding: 10px 12px;
-        text-align: left;
-        color: {TEXT};
+    th, td, .dataframe th, .dataframe td {{
+        border: 2px solid {BORDER} !important;
+        padding: 10px 12px !important;
+        text-align: left !important;
+        color: {TEXT} !important;
     }}
-    th {{
-        background: #eef5ff;
-        font-weight: 800;
+    th, .dataframe th {{
+        background: #eef5ff !important;
+        font-weight: 800 !important;
     }}
 </style>
 """

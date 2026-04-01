@@ -58,9 +58,15 @@ CSS = f"""
     .metric-card {{
         background: {CARD_BG};
         border: 2px solid {BORDER};
+        border-radius: 6px !important;
         padding: 18px 20px;
         min-height: 122px;
-        box-shadow: 4px 4px 0px {BORDER};
+        transition: all 0.2s ease-in-out;
+        box-shadow: none;
+    }}
+    .metric-card:hover {{
+        box-shadow: 8px 8px 0px {BORDER};
+        transform: translate(-3px, -3px);
     }}
     .metric-icon {{
         font-size: 1.25rem;
@@ -111,10 +117,16 @@ CSS = f"""
     .card {{
         background: {CARD_BG};
         border: 2px solid {ACCENT};
+        border-radius: 6px !important;
         padding: 20px;
-        box-shadow: 4px 4px 0px {ACCENT};
+        transition: all 0.2s ease-in-out;
+        box-shadow: none;
         height: 100%;
         margin-top: 0.4rem;
+    }}
+    .card:hover {{
+        box-shadow: 8px 8px 0px {ACCENT};
+        transform: translate(-3px, -3px);
     }}
     .section-title {{
         font-size: 1.02rem;
@@ -173,23 +185,36 @@ CSS = f"""
         opacity: 1 !important;
     }}
     [data-baseweb="tab-list"] {{
-        gap: 8px;
-        margin-top: 0.4rem;
-        margin-bottom: 0.8rem;
+        gap: 16px;
+        margin-top: 1.8rem;
+        margin-bottom: 1.2rem;
+    }}
+    div[data-baseweb="tab-highlight"] {{
+        display: none !important;
+        background-color: transparent !important;
     }}
     button[role="tab"] {{
-        background: #ffffff !important;
+        background: #A6FAFF !important;
         color: {TEXT} !important;
         border: 2px solid {BORDER} !important;
-        box-shadow: 4px 4px 0px {BORDER};
+        box-shadow: none;
         font-weight: 700 !important;
         padding: 0.45rem 0.9rem !important;
+        transition: all 0.1s ease-in-out;
+    }}
+    button[role="tab"]:hover {{
+        background: #79F7FF !important;
+        box-shadow: 2px 2px 0px {BORDER};
+    }}
+    button[role="tab"]:active {{
+        background: #00E1EF !important;
     }}
     button[role="tab"][aria-selected="true"] {{
-        background: #e8f1ff !important;
+        background: #00E1EF !important;
         color: {TEXT} !important;
-        border: 2px solid {ACCENT} !important;
-        box-shadow: 4px 4px 0px {ACCENT};
+        border: 2px solid {BORDER} !important;
+        box-shadow: 2px 2px 0px {BORDER};
+        transform: translate(-2px, -2px);
     }}
     button[role="tab"] p {{
         color: {TEXT} !important;

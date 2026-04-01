@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
@@ -59,41 +59,38 @@ RESISTANT = "#cc0000"
 SUSCEPTIBLE = "#006600"
 TEXT_MUTED = "#0a0a0f"
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "meta-llama/llama-3.3-70b-instruct"
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
-def get_openrouter_api_key() -> str | None:
-    """Get OpenRouter API key from Streamlit secrets or environment variable."""
+def get_groq_api_key() -> str | None:
+    """Get Groq API key from Streamlit secrets or environment variable."""
     try:
-        return st.secrets["OPENROUTER_API_KEY"]
+        return st.secrets["GROQ_API_KEY"]
     except (KeyError, FileNotFoundError):
         pass
-    return os.environ.get("OPENROUTER_API_KEY")
+    return os.environ.get("GROQ_API_KEY")
 
 
-def call_openrouter_api(prompt: str) -> str:
-    """Call OpenRouter API and return the response text."""
-    api_key = get_openrouter_api_key()
+def call_groq_api(prompt: str) -> str:
+    """Call Groq API and return the response text."""
+    api_key = get_groq_api_key()
     if not api_key:
-        raise ValueError("OpenRouter API key not configured. Set OPENROUTER_API_KEY in secrets or environment.")
+        raise ValueError("Groq API key not configured. Set GROQ_API_KEY in secrets or environment.")
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://horizon.streamlit.app",
-        "X-Title": "Horizon Antibiotic Resistance",
     }
 
     payload = {
-        "model": OPENROUTER_MODEL,
-        "provider": {"order": ["Groq"], "allow_fallbacks": True},
+        "model": GROQ_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.3,
         "max_tokens": 2000,
     }
 
-    response = requests.post(OPENROUTER_API_URL, json=payload, headers=headers, timeout=60)
+    response = requests.post(GROQ_API_URL, json=payload, headers=headers, timeout=60)
     response.raise_for_status()
     data = response.json()
     return data["choices"][0]["message"]["content"]
@@ -182,16 +179,28 @@ CSS = f"""
     .card {{
         background: {CARD_BG};
         border: 2px solid {ACCENT};
+        border-radius: 6px !important;
         padding: 20px;
-        box-shadow: 4px 4px 0px {ACCENT};
+        transition: all 0.2s ease-in-out;
+        box-shadow: none;
         height: 100%;
+    }}
+    .card:hover {{
+        box-shadow: 8px 8px 0px {ACCENT};
+        transform: translate(-3px, -3px);
     }}
     .metric-card {{
         background: {CARD_BG};
         border: 2px solid #000000;
+        border-radius: 6px !important;
         padding: 18px 20px;
         min-height: 122px;
-        box-shadow: 4px 4px 0px #000000;
+        transition: all 0.2s ease-in-out;
+        box-shadow: none;
+    }}
+    .metric-card:hover {{
+        box-shadow: 8px 8px 0px #000000;
+        transform: translate(-3px, -3px);
     }}
     .metric-icon {{
         font-size: 1.25rem;
@@ -409,6 +418,22 @@ CSS = f"""
         color: {TEXT_MUTED} !important;
         font-weight: 600 !important;
     }}
+    table, .dataframe {{
+        width: 100%;
+        border-collapse: collapse !important;
+        background: #ffffff !important;
+        margin-bottom: 1rem;
+    }}
+    th, td, .dataframe th, .dataframe td {{
+        border: 2px solid #000000 !important;
+        padding: 10px 12px !important;
+        text-align: left !important;
+        color: #0a0a0f !important;
+    }}
+    th, .dataframe th {{
+        background: #eef5ff !important;
+        font-weight: 800 !important;
+    }}
 </style>
 """
 
@@ -559,7 +584,7 @@ def render_advisor_box(
 
         with st.spinner("Generating clinical interpretation..."):
             try:
-                api_response = call_openrouter_api(prompt)
+                api_response = call_groq_api(prompt)
                 st.session_state["track_b_clinical_response"] = api_response
                 st.session_state["track_b_advisor_generated"] = True
             except Exception as e:
@@ -601,11 +626,21 @@ def make_prediction_plot(projection_df: pd.DataFrame, star_coords: np.ndarray | 
         paper_bgcolor="white",
         plot_bgcolor="white",
         margin=dict(l=0, r=0, t=0, b=0),
-        showlegend=False,
+        showlegend=True,
+        legend=dict(
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=2,
+            font=dict(color="black", weight="bold"),
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+        ),
         font=dict(color="black"),
         scene=dict(
             bgcolor="white",
-            camera=dict(eye=dict(x=0.72, y=0.72, z=0.62)),
+            camera=dict(eye=dict(x=1.35, y=1.35, z=0.92)),
             xaxis=dict(
                 backgroundcolor="white",
                 color="black",
@@ -837,23 +872,13 @@ def main():
                 """,
                 unsafe_allow_html=True,
             )
+
+
             st.markdown('<div style="margin-bottom:24px;"></div>', unsafe_allow_html=True)
             st.markdown('<div class="section-title">Top Local Feature Contributions</div>', unsafe_allow_html=True)
             render_local_shap_bars(local_top_features[:5])
 
-            current_inputs = {
-                "species": species,
-                "antibiotic_name": antibiotic_name,
-                "antibiotic_class": antibiotic_class,
-                "site": site,
-                "sample_type": sample_type,
-                "age": age,
-                "gender": gender,
-                "Diabetes": diabetes,
-                "Hypertension": hypertension,
-                "Hospital_before": hospital_before,
-            }
-            render_advisor_box(prediction_label, confidence_pct, resistant_probability, local_top_features, current_inputs)
+
         else:
             st.markdown(
                 '<div class="prediction-sub">Run a prediction to place the current patient inside the historical cluster map.</div>',
@@ -862,7 +887,8 @@ def main():
 
     with right_col:
         st.markdown('<div class="section-title">Top Global Drivers</div>', unsafe_allow_html=True)
-        st.dataframe(pd.DataFrame(shap_features[:10]), use_container_width=True, hide_index=True)
+        df_display = pd.DataFrame(shap_features[:10])
+        st.markdown(df_display.to_html(index=False, escape=False, classes="dataframe"), unsafe_allow_html=True)
         st.markdown(
             """
             <div class="advisor-box">
@@ -891,6 +917,21 @@ def main():
                 use_container_width=True,
                 disabled=True,
             )
+
+    st.markdown('<div style="margin-top: 2rem;"></div>', unsafe_allow_html=True)
+    current_inputs = {
+        "species": species,
+        "antibiotic_name": antibiotic_name,
+        "antibiotic_class": antibiotic_class,
+        "site": site,
+        "sample_type": sample_type,
+        "age": age,
+        "gender": gender,
+        "Diabetes": diabetes,
+        "Hypertension": hypertension,
+        "Hospital_before": hospital_before,
+    }
+    render_advisor_box(prediction_label, confidence_pct, resistant_probability, local_top_features, current_inputs)
 
 
 if __name__ == "__main__":
